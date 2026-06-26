@@ -1,0 +1,162 @@
+---
+title: "SDKs and API usage"
+description: "Use the OpenAI SDK you already have. Change the base URL, add start_within."
+---
+
+FlexInference speaks the OpenAI API. There's no new SDK to learn — point the official OpenAI SDK (or `curl`) at our base URL, send your `flex_live_` key, and add `start_within`.
+
+```
+Base URL   https://api.flexinference.com/v1
+Auth       Authorization: Bearer flex_live_...
+```
+
+Both endpoints are supported, and translated faithfully in both directions:
+
+- `POST /v1/responses` — the Responses API
+- `POST /v1/chat/completions` — the Chat Completions API
+
+## Configure the client
+
+<CodeGroup>
+
+```python Python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://api.flexinference.com/v1",
+    api_key="flex_live_...",
+)
+```
+
+```typescript Node
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  baseURL: "https://api.flexinference.com/v1",
+  apiKey: "flex_live_...",
+});
+```
+
+```bash curl
+export FLEX_API_KEY="flex_live_..."
+export FLEX_BASE_URL="https://api.flexinference.com/v1"
+```
+
+</CodeGroup>
+
+## Passing `start_within`
+
+It's a standard request field. The OpenAI SDKs don't type it, so pass it through their escape hatch.
+
+<CodeGroup>
+
+```python Python
+resp = client.responses.create(
+    model="gpt-5.5",
+    input="Summarize this contract.",
+    extra_body={"start_within": "00h-01m-00s"},
+)
+```
+
+```typescript Node
+const resp = await client.responses.create({
+  model: "gpt-5.5",
+  input: "Summarize this contract.",
+  start_within: "00h-01m-00s",
+} as any);
+```
+
+```bash curl
+curl "$FLEX_BASE_URL/responses" \
+  -H "Authorization: Bearer $FLEX_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-5.5",
+    "input": "Summarize this contract.",
+    "start_within": "00h-01m-00s"
+  }'
+```
+
+</CodeGroup>
+
+See [Deadline routing](/deadline-routing) for the full set of values.
+
+## Streaming
+
+Set `stream: true` and read events as they arrive, exactly as with OpenAI. The flex race is invisible to the stream — you start receiving tokens only once a tier has committed.
+
+<CodeGroup>
+
+```python Python
+stream = client.responses.create(
+    model="gpt-5-nano",
+    input="Count to ten.",
+    stream=True,
+    extra_body={"start_within": "00h-00m-20s"},
+)
+for event in stream:
+    if event.type == "response.output_text.delta":
+        print(event.delta, end="")
+```
+
+```typescript Node
+const stream = await client.responses.create({
+  model: "gpt-5-nano",
+  input: "Count to ten.",
+  stream: true,
+  start_within: "00h-00m-20s",
+} as any);
+
+for await (const event of stream) {
+  if (event.type === "response.output_text.delta") process.stdout.write(event.delta);
+}
+```
+
+```bash curl
+curl "$FLEX_BASE_URL/responses" \
+  -H "Authorization: Bearer $FLEX_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-5-nano",
+    "input": "Count to ten.",
+    "stream": true,
+    "start_within": "00h-00m-20s"
+  }'
+```
+
+</CodeGroup>
+
+## Chat Completions
+
+The Chat Completions endpoint works the same way. `start_within` applies identically.
+
+<CodeGroup>
+
+```python Python
+resp = client.chat.completions.create(
+    model="gpt-5.5",
+    messages=[{"role": "user", "content": "Hello!"}],
+    extra_body={"start_within": "standard"},
+)
+print(resp.choices[0].message.content)
+```
+
+```typescript Node
+const resp = await client.chat.completions.create({
+  model: "gpt-5.5",
+  messages: [{ role: "user", content: "Hello!" }],
+  start_within: "standard",
+} as any);
+
+console.log(resp.choices[0].message.content);
+```
+
+</CodeGroup>
+
+## Everything else works unchanged
+
+Tool calling, structured outputs (`response_format`), vision, and reasoning all pass through to OpenAI as-is. Use them exactly as you would directly.
+
+<Warning>
+  A few Chat Completions parameters have no equivalent on the Responses models FlexInference routes and are rejected up front with `unsupported_parameter`: `presence_penalty`, `frequency_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop`, `prediction`, `audio`, non-text `modalities`, `web_search_options`, and `n > 1`. They're only rejected when meaningfully set — leaving them at their defaults is fine. For web search, use a Responses `web_search` tool.
+</Warning>

@@ -1,0 +1,85 @@
+---
+title: "Errors"
+description: "The error envelope, FlexInference codes, and what passes through from OpenAI."
+---
+
+FlexInference uses OpenAI's error envelope, so any OpenAI client parses our errors without changes:
+
+```json
+{
+  "error": {
+    "message": "Incorrect API key provided.",
+    "type": "authentication_error",
+    "code": "invalid_api_key",
+    "param": null
+  }
+}
+```
+
+`type` mirrors OpenAI's broad categories (`invalid_request_error`, `authentication_error`, and our own `flexinference_error` for internal faults). `code` is the machine-readable reason. `param` names the offending field when there is one.
+
+## FlexInference codes
+
+These originate in our layer.
+
+| Status | Code | Meaning |
+| --- | --- | --- |
+| `401` | `missing_api_key` | No `Authorization: Bearer` header. |
+| `401` | `invalid_api_key` | The `flex_live_` key is malformed or unknown. |
+| `400` | `no_byok_key` | No OpenAI key configured for your org. Add one in the dashboard. |
+| `400` | `missing_model` | The `model` field is missing. |
+| `400` | `unsupported_model` | The model isn't on the [supported list](/models). |
+| `400` | `invalid_start_within` | The `start_within` value is malformed or out of range. |
+| `400` | `unsupported_parameter` | A Chat parameter with no Responses equivalent was set. See [SDKs](/sdks). |
+| `400` | `unsupported_value` | `n` must be `1` or omitted — the Responses API returns a single generation. |
+| `400` | `invalid_json` / `invalid_body` | The body isn't valid JSON, or isn't a JSON object. |
+| `404` | `unknown_url` | Wrong path. Use `/v1/responses` or `/v1/chat/completions`. |
+| `405` | `method_not_allowed` | Use `POST`. |
+| `500` | `internal_error` | Something failed inside FlexInference. |
+
+## Pass-through errors
+
+Anything that isn't a FlexInference-layer error is **OpenAI's response, returned verbatim** — same status, same body. A `400` for a bad parameter, a `401` for an invalid OpenAI key, a `429` rate limit on the standard attempt: you see exactly what OpenAI sent. FlexInference never rewrites OpenAI's errors.
+
+<Tip>
+  Branch on `error.code` for FlexInference-specific handling (for example, prompt the user to add a BYOK key on `no_byok_key`), and treat unknown codes as ordinary OpenAI errors.
+</Tip>
+
+## Handling errors in code
+
+The OpenAI SDKs raise on non-2xx responses, with the parsed body attached.
+
+<CodeGroup>
+
+```python Python
+from openai import APIStatusError
+
+try:
+    resp = client.responses.create(
+        model="gpt-5.5",
+        input="hi",
+        extra_body={"start_within": "00h-00m-30s"},
+    )
+except APIStatusError as e:
+    code = (e.body or {}).get("error", {}).get("code")
+    if code == "no_byok_key":
+        print("Add your OpenAI key in the dashboard.")
+    else:
+        raise
+```
+
+```typescript Node
+import OpenAI from "openai";
+
+try {
+  await client.responses.create({ model: "gpt-5.5", input: "hi", start_within: "00h-00m-30s" } as any);
+} catch (e) {
+  if (e instanceof OpenAI.APIError && e.code === "no_byok_key") {
+    console.log("Add your OpenAI key in the dashboard.");
+  } else {
+    throw e;
+  }
+}
+```
+
+</CodeGroup>

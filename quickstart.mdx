@@ -1,47 +1,92 @@
 ---
 title: "Quickstart"
-description: "Begin with a guide on the fastest path to a successful outcome"
+description: "From zero to your first deadline-aware request."
 ---
 
-Describe how someone begins using your product. What is the first thing they need to do? Are there any prerequisites?
-
-A quickstart should take someone from zero to using your product. They'll get a quick win and a sense of what they can accomplish.
+This guide takes you from signing up to a working request that picks the cheapest tier within your deadline.
 
 ## Prerequisites
 
-Before you begin, you must have:
-
-- Requirement one (for example, Node.js 18+, a free account, an API key)
-- Requirement two (for example, a compatible device, a compatible browser, a compatible operating system)
+- An [OpenAI API key](https://platform.openai.com/api-keys) with available credit. FlexInference uses your key (BYOK); OpenAI bills you directly.
+- A terminal with `curl`, or Python 3.9+, or Node.js 18+.
 
 ## Get started
 
 <Steps>
-  <Step title="Install">
-    Describe how to install your product or sign up.
-
-    ```bash
-    npm install your-package
-    ```
+  <Step title="Create a FlexInference account">
+    Go to the [dashboard](https://www.flexinference.com/dashboard) and sign in. Each account maps to an organization that owns its keys and usage.
   </Step>
-  <Step title="Configure">
-    Describe any setup or configuration needed before first use.
-
-    ```bash
-    your-cli init
-    ```
+  <Step title="Create an API key">
+    In the dashboard, create a key. It looks like `flex_live_…` and is shown once — copy it somewhere safe. This is the key you send to FlexInference, not your OpenAI key.
   </Step>
-  <Step title="Run it">
-    Show the first thing a user does to see it working.
+  <Step title="Add your OpenAI key (BYOK)">
+    Paste your OpenAI key into the dashboard. It is encrypted at rest and used only to make requests on your behalf. See [Authentication](/authentication) for how this works.
+  </Step>
+  <Step title="Make your first request">
+    Point your client at `https://api.flexinference.com/v1` and add `start_within`. Below, `00h-00m-30s` asks us to start within 30 seconds — we race OpenAI's flex tier and fall back to standard if it can't.
 
-    ```bash
-    your-cli start
+    <CodeGroup>
+
+    ```bash curl
+    curl https://api.flexinference.com/v1/responses \
+      -H "Authorization: Bearer $FLEX_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "model": "gpt-5-nano",
+        "input": "Write a haiku about cheap GPUs.",
+        "start_within": "00h-00m-30s"
+      }'
     ```
+
+    ```python Python (openai SDK)
+    from openai import OpenAI
+
+    client = OpenAI(
+        base_url="https://api.flexinference.com/v1",
+        api_key="flex_live_...",  # your FlexInference key
+    )
+
+    resp = client.responses.create(
+        model="gpt-5-nano",
+        input="Write a haiku about cheap GPUs.",
+        extra_body={"start_within": "00h-00m-30s"},
+    )
+    print(resp.output_text)
+    ```
+
+    ```typescript Node (openai SDK)
+    import OpenAI from "openai";
+
+    const client = new OpenAI({
+      baseURL: "https://api.flexinference.com/v1",
+      apiKey: "flex_live_...", // your FlexInference key
+    });
+
+    const resp = await client.responses.create({
+      model: "gpt-5-nano",
+      input: "Write a haiku about cheap GPUs.",
+      // start_within is a FlexInference extension; cast to pass it through.
+      start_within: "00h-00m-30s",
+    } as any);
+
+    console.log(resp.output_text);
+    ```
+
+    </CodeGroup>
   </Step>
 </Steps>
 
-<Tip>
-  Give people a way to get help. This could be a link to a support page, a chat with a customer support agent, or a forum for your product.
+<Check>
+  A `200` response with `"service_tier": "flex"` means the cheap tier won the race. `"service_tier": "default"` means we fell back to standard to meet your deadline. Either way, you got an answer in time.
+</Check>
 
-  Example: Need help? Reach out to us at [support@yourcompany.com](mailto:support@yourcompany.com).
-</Tip>
+## What to try next
+
+<CardGroup cols={2}>
+  <Card title="Tune the deadline" icon="hourglass-half" href="/deadline-routing">
+    Learn the `start_within` values and when fallback happens.
+  </Card>
+  <Card title="Stream, tools, vision" icon="code" href="/sdks">
+    Everything OpenAI supports works unchanged.
+  </Card>
+</CardGroup>

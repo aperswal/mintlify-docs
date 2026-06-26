@@ -1,0 +1,42 @@
+---
+title: "Supported models"
+description: "The models FlexInference routes, and the inputs they accept."
+---
+
+FlexInference routes the OpenAI models that support flex pricing. Pass the model by its **alias** (for example `gpt-5.5`), not a dated snapshot.
+
+## Models
+
+<CardGroup cols={2}>
+  <Card title="GPT-5.5" icon="layer-group">
+    `gpt-5.5`, `gpt-5.5-pro`
+  </Card>
+  <Card title="GPT-5.4" icon="layer-group">
+    `gpt-5.4`, `gpt-5.4-mini`, `gpt-5.4-nano`, `gpt-5.4-pro`
+  </Card>
+  <Card title="GPT-5.2" icon="layer-group">
+    `gpt-5.2`, `gpt-5.2-codex`, `gpt-5.2-pro`
+  </Card>
+  <Card title="GPT-5 and 5.1" icon="layer-group">
+    `gpt-5`, `gpt-5-mini`, `gpt-5-nano`, `gpt-5.1`
+  </Card>
+  <Card title="Reasoning" icon="brain">
+    `o3`, `o4-mini`
+  </Card>
+</CardGroup>
+
+A request for a model that isn't on this list returns `400 unsupported_model`. Models without flex support (for example the GPT-4 family, `o1`, `o3-mini`) are intentionally excluded — flex routing wouldn't apply.
+
+## Inputs
+
+These models accept the input types you'd expect from OpenAI:
+
+- **Text** — system, developer, user, and assistant messages.
+- **Images** — pass image URLs or base64 data URLs. Data URLs are the most reliable.
+- **Files** — PDFs and other file inputs supported by the Responses API.
+
+Output is text (including tool calls, structured outputs, and reasoning). Streaming works on every model.
+
+<Note>
+  New flex-capable models are added as OpenAI ships them. If a model you expect is missing, check that you're using its alias and that OpenAI offers flex pricing for it.
+</Note>

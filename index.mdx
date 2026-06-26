@@ -1,20 +1,51 @@
 ---
 title: "Introduction"
-description: "Welcome to your project"
+description: "A deadline-aware, OpenAI-compatible inference router. Trade latency for cost with one extra field."
 ---
 
-Write a short description of your product here. What it does, who it's for, and what they can accomplish with it.
+FlexInference is a drop-in router for the OpenAI API. You send the same Chat Completions or Responses requests you already send, with your own OpenAI key, and add one field — `start_within` — to tell us how long you're willing to wait. We route each request to the cheapest tier that meets your deadline, and fall back automatically if it can't.
 
-<Tip>
-  Ready to make this your own? Start by editing this page. Update your `docs.json` file to customize your site. Then fill out the [Quickstart](/quickstart) page.
-</Tip>
+<Info>
+  FlexInference does not sell inference. You bring your own OpenAI key (BYOK), and OpenAI bills your account directly at whatever tier served the request. We add deadline-aware routing on top.
+</Info>
 
-<Card title="Quickstart" icon="rocket" href="/quickstart">
-  This card links to the quickstart page in your project.
-</Card>
-<Card title="Components" icon="puzzle-piece" href="https://mintlify.com/docs/components">
-  Add cards, callouts, steps, tabs, and more to design and structure your pages.
-</Card>
-<Card title="Settings" icon="gear" href="https://mintlify.com/docs/organize/settings">
-  Set your site name, branding, and navigation in the `docs.json` file.
-</Card>
+## Why it exists
+
+OpenAI offers the same models at different prices depending on how fast you need them. Flex (batch) rates are much cheaper than standard, but capacity isn't guaranteed. Most apps don't have the time to manage that trade-off per request.
+
+With FlexInference you express the trade-off declaratively:
+
+<CardGroup cols={3}>
+  <Card title="Need it now" icon="bolt">
+    `start_within: "priority"` routes to OpenAI's priority tier.
+  </Card>
+  <Card title="Can wait a bit" icon="hourglass-half">
+    `start_within: "00h-00m-30s"` races flex against your deadline, then falls back to standard.
+  </Card>
+  <Card title="Standard" icon="equals">
+    `start_within: "standard"` uses the default tier and pricing.
+  </Card>
+</CardGroup>
+
+## Drop-in compatible
+
+The base URL is the only thing you change. Everything else — streaming, tool calling, structured outputs, vision, reasoning — works exactly as it does against OpenAI.
+
+```
+https://api.flexinference.com/v1
+```
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Go from zero to your first deadline-aware request.
+  </Card>
+  <Card title="Deadline routing" icon="hourglass-half" href="/deadline-routing">
+    How `start_within` works, and when fallback kicks in.
+  </Card>
+  <Card title="Authentication" icon="key" href="/authentication">
+    FlexInference API keys and your BYOK OpenAI key.
+  </Card>
+  <Card title="Supported models" icon="layer-group" href="/models">
+    The models that support flex routing.
+  </Card>
+</CardGroup>
