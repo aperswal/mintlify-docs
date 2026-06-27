@@ -1,9 +1,9 @@
 ---
 title: "Introduction"
-description: "A deadline-aware, OpenAI-compatible inference router. Trade latency for cost with one extra field."
+description: "A deadline-aware, OpenAI-compatible inference router. Bring your own key, add one start_within field, trade latency for cost."
 ---
 
-FlexInference is a drop-in router for the OpenAI API. You send the same Chat Completions or Responses requests you already send, with your own OpenAI key, and add one field — `start_within` — to tell us how long you're willing to wait. We route each request to the cheapest tier that meets your deadline, and fall back automatically if it can't.
+Same model. Half the bill. FlexInference is a deadline-aware, OpenAI-compatible inference router. You send the same Chat Completions or Responses requests you already send, with your own OpenAI key. Add one field, `start_within`, to tell us how long you can wait. Flex requests cost half the standard rate for the same model and the same response. We route each request to the cheapest tier that meets your deadline, and fall back to standard if flex cannot.
 
 <Info>
   FlexInference does not sell inference. You bring your own OpenAI key (BYOK), and OpenAI bills your account directly at whatever tier served the request. We add deadline-aware routing on top.
@@ -11,7 +11,7 @@ FlexInference is a drop-in router for the OpenAI API. You send the same Chat Com
 
 ## Why it exists
 
-OpenAI offers the same models at different prices depending on how fast you need them. Flex (batch) rates are much cheaper than standard, but capacity isn't guaranteed. Most apps don't have the time to manage that trade-off per request.
+OpenAI sells the same models at different prices depending on how fast you need them. The flex (batch) tier runs at half the standard rate, but capacity is not guaranteed. Most apps do not have the time to manage that trade-off per request.
 
 With FlexInference you express the trade-off declaratively:
 

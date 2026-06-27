@@ -33,7 +33,7 @@ description: "The start_within field, the flex race, and automatic fallback."
 
 ## The flex race
 
-When you give a duration, we try to serve your request from OpenAI's **flex** tier, which is billed at much cheaper batch rates but isn't guaranteed capacity. We hold your response and watch the upstream:
+When you give a duration, we try to serve your request from OpenAI's **flex** tier, which is billed at half the standard rate but isn't guaranteed capacity. We hold your response and watch the upstream:
 
 <Steps>
   <Step title="Fire flex">
