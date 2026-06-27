@@ -36,14 +36,19 @@
     "global": {
       "anchors": [
         {
-          "anchor": "Dashboard",
-          "href": "https://www.flexinference.com/dashboard",
-          "icon": "gauge"
-        },
-        {
           "anchor": "Status",
           "href": "https://api.flexinference.com/health",
           "icon": "signal"
+        },
+        {
+          "anchor": "Python SDK",
+          "href": "https://pypi.org/project/flexinference/",
+          "icon": "python"
+        },
+        {
+          "anchor": "TypeScript SDK",
+          "href": "https://www.npmjs.com/package/flexinference",
+          "icon": "npm"
         }
       ]
     }
@@ -53,12 +58,6 @@
     "dark": "/logo/dark.svg"
   },
   "navbar": {
-    "links": [
-      {
-        "label": "Sign in",
-        "href": "https://www.flexinference.com/login"
-      }
-    ],
     "primary": {
       "type": "button",
       "label": "Dashboard",
