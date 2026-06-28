@@ -54,7 +54,7 @@ These models accept the input types you'd expect from OpenAI:
 Output is text (including tool calls, structured outputs, and reasoning). Streaming works on every model.
 
 <Note>
-  Text, streaming, structured outputs, function calling, image input, and web search work on **both** OpenAI and Gemini. For web search, send a Responses `web_search` tool; on Gemini we map it to `google_search`. File input currently applies to OpenAI.
+  Text, streaming, structured outputs, function calling, image input, file input, and web search work on **both** OpenAI and Gemini. For web search, send a Responses `web_search` tool; on Gemini we map it to `google_search`. Pass files as base64 data URLs (PDFs are the most reliable on Gemini).
 </Note>
 
 <Note>
