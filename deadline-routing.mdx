@@ -3,33 +3,42 @@ title: "Deadline routing"
 description: "The start_within field, the flex race, and automatic fallback."
 ---
 
-`start_within` is the one field FlexInference adds. It tells us how long you're willing to wait for a request to start, and we pick the cheapest tier that meets it. It takes one of three forms.
+`start_within` is the one field FlexInference adds, and it is **required** on every request. It tells us how long you're willing to wait for a request to start, and we route accordingly. It takes one of four forms.
 
-## The three forms
+## The four forms
 
 <Tabs>
+  <Tab title="default">
+    ```json
+    { "start_within": "default" }
+    ```
+
+    Routes to OpenAI's **default** (standard) tier at standard pricing - the normal OpenAI experience. Works with any model.
+  </Tab>
   <Tab title="priority">
     ```json
     { "start_within": "priority" }
     ```
 
-    Routes to OpenAI's **priority** tier for the fastest possible start. Best for interactive, latency-critical paths. Priority is the most expensive tier.
+    Routes to OpenAI's **priority** tier for the fastest possible start. Best for interactive, latency-critical paths. Priority is the most expensive tier. Works with any model.
   </Tab>
-  <Tab title="standard">
+  <Tab title="auto">
     ```json
-    { "start_within": "standard" }
+    { "start_within": "auto" }
     ```
 
-    Routes to the **standard** (default) tier at standard pricing. This is the normal OpenAI experience with no flex involved.
+    Routes to OpenAI's **auto** service tier and lets OpenAI choose the tier. Works with any model. (This is OpenAI's `service_tier: auto`, not a FlexInference auto-routing feature.)
   </Tab>
   <Tab title="a duration">
     ```json
     { "start_within": "00h-00m-30s" }
     ```
 
-    Runs the **flex race** (below). The duration is your deadline to start, written as `HHh-MMm-SSs` with two digits per field. It must be between **5 seconds and 10 minutes** (`00h-00m-05s` to `00h-10m-00s`).
+    Runs the **flex race** (below) on a flex-capable [model](/models). The duration is your deadline to start, written as `HHh-MMm-SSs` with two digits per field. It must be between **5 seconds and 10 minutes** (`00h-00m-05s` to `00h-10m-00s`).
   </Tab>
 </Tabs>
+
+`default`, `priority`, and `auto` proxy **any** model straight to OpenAI. Only the duration form runs the flex race, and it requires a flex-capable [model](/models); a duration on any other model returns `400 model_not_flex_capable`.
 
 ## The flex race
 
@@ -53,6 +62,12 @@ Fallback to standard happens when, within your deadline, flex returns a `429` (n
   Pick a duration as long as your UX can tolerate. A longer deadline gives flex more room to win, which means more requests served at the cheaper rate.
 </Info>
 
+## When the flex pool is unavailable
+
+The flex tier is shared, best-effort capacity. If flex can't start before your deadline - a `429`, any `5xx`, a pre-start failure, or simply no start in time - we fall back to standard automatically and you still get an answer.
+
+In rare cases the flex pool fails *after* the request has been accepted and started streaming. That failure surfaces to you - as a terminal `response.failed` event on a streaming request, or a `502` on a non-streaming one - rather than being silently retried, because we never report a request as done when it was not. If you hit this, **retry**, or use `default`, `priority`, or `auto` to skip the flex pool entirely.
+
 ## Billing
 
 You're on BYOK, so OpenAI bills your account at the rate of whichever tier served the request — flex if it committed, standard if it fell back. In the rare case a flex attempt consumes tokens before failing, that usage is billed by OpenAI just as it would be if you called flex directly; we surface it in your usage so the cost is never hidden.
@@ -62,5 +77,5 @@ You're on BYOK, so OpenAI bills your account at the rate of whichever tier serve
 Every other OpenAI status code and response body passes through untouched. A `400` for a bad parameter, a `401` for a bad OpenAI key, rate limits on the standard attempt — you see exactly what OpenAI returned. FlexInference only changes the tier, never the contract.
 
 <Note>
-  `start_within` is optional. Omit it and the request goes to the standard (default) tier, exactly like a plain OpenAI call. Send a malformed value and you get `invalid_start_within`. See [Errors](/errors).
+  `start_within` is **required**. Omit it and the request returns `400 missing_start_within` - this applies even to a plain OpenAI SDK pointed at our base URL. Send a malformed value (including the retired `standard`) and you get `invalid_start_within`. See [Errors](/errors).
 </Note>

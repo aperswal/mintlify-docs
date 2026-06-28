@@ -3,9 +3,9 @@ title: "Supported models"
 description: "The models FlexInference routes, and the inputs they accept."
 ---
 
-FlexInference routes the OpenAI models that support flex pricing. Pass the model by its **alias** (for example `gpt-5.5`), not a dated snapshot.
+FlexInference proxies **any** OpenAI model for `default`, `priority`, and `auto` requests. The models below additionally support the **flex race** - the duration form of [`start_within`](/deadline-routing). Pass the model by its **alias** (for example `gpt-5.5`), not a dated snapshot.
 
-## Models
+## Flex-capable models
 
 <CardGroup cols={2}>
   <Card title="GPT-5.5" icon="layer-group">
@@ -25,7 +25,7 @@ FlexInference routes the OpenAI models that support flex pricing. Pass the model
   </Card>
 </CardGroup>
 
-A request for a model that isn't on this list returns `400 unsupported_model`. Models without flex support (for example the GPT-4 family, `o1`, `o3-mini`) are intentionally excluded — flex routing wouldn't apply.
+A **duration** `start_within` on a model that isn't on this list returns `400 model_not_flex_capable` - the flex race only works on flex-capable models. Those same models still work with `default`, `priority`, or `auto`, which proxy any model straight to OpenAI.
 
 ## Inputs
 

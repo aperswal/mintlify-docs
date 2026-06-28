@@ -18,7 +18,7 @@ Create a key in the [dashboard](https://www.flexinference.com/dashboard). It is 
 curl https://api.flexinference.com/v1/responses \
   -H "Authorization: Bearer flex_live_..." \
   -H "Content-Type: application/json" \
-  -d '{ "model": "gpt-5-nano", "input": "ping" }'
+  -d '{ "model": "gpt-5-nano", "input": "ping", "start_within": "default" }'
 ```
 
 A malformed or unknown key returns `401 invalid_api_key`. Keys carry a checksum, so an obviously-mistyped key is rejected immediately.

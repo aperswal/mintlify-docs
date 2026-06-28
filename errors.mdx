@@ -28,8 +28,9 @@ These originate in our layer.
 | `401` | `invalid_api_key` | The `flex_live_` key is malformed or unknown. |
 | `400` | `no_byok_key` | No OpenAI key configured for your org. Add one in the dashboard. |
 | `400` | `missing_model` | The `model` field is missing. |
-| `400` | `unsupported_model` | The model isn't on the [supported list](/models). |
-| `400` | `invalid_start_within` | The `start_within` value is malformed or out of range. |
+| `400` | `missing_start_within` | The required `start_within` field is missing. Set it to `default`, `priority`, `auto`, or a duration `HHh-MMm-SSs`. |
+| `400` | `invalid_start_within` | The `start_within` value is malformed or out of range (the retired `standard` value lands here too). |
+| `400` | `model_not_flex_capable` | A duration `start_within` named a model that does not support the flex race. Use a flex-capable [model](/models), or set `start_within` to `default`, `priority`, or `auto`. |
 | `400` | `unsupported_parameter` | A Chat parameter with no Responses equivalent was set. See [SDKs](/sdks). |
 | `400` | `unsupported_value` | `n` must be `1` or omitted — the Responses API returns a single generation. |
 | `400` | `invalid_json` / `invalid_body` | The body isn't valid JSON, or isn't a JSON object. |

@@ -3,7 +3,7 @@ title: "SDKs and API usage"
 description: "Use the OpenAI SDK you already have. Change the base URL, add start_within."
 ---
 
-FlexInference speaks the OpenAI API. There's no new SDK to learn — point the official OpenAI SDK (or `curl`) at our base URL, send your `flex_live_` key, and add `start_within`.
+FlexInference speaks the OpenAI API. There's no new SDK to learn - point the official OpenAI SDK (or `curl`) at our base URL, send your `flex_live_` key, and add the required `start_within` field. Every request needs it; omitting it returns `400 missing_start_within`.
 
 ```
 Base URL   https://api.flexinference.com/v1
@@ -136,7 +136,7 @@ The Chat Completions endpoint works the same way. `start_within` applies identic
 resp = client.chat.completions.create(
     model="gpt-5.5",
     messages=[{"role": "user", "content": "Hello!"}],
-    extra_body={"start_within": "standard"},
+    extra_body={"start_within": "default"},
 )
 print(resp.choices[0].message.content)
 ```
@@ -145,7 +145,7 @@ print(resp.choices[0].message.content)
 const resp = await client.chat.completions.create({
   model: "gpt-5.5",
   messages: [{ role: "user", content: "Hello!" }],
-  start_within: "standard",
+  start_within: "default",
 } as any);
 
 console.log(resp.choices[0].message.content);

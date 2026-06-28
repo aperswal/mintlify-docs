@@ -1,9 +1,9 @@
 ---
 title: "Introduction"
-description: "A deadline-aware, OpenAI-compatible inference router. Bring your own key, add one start_within field, trade latency for cost."
+description: "A deadline-aware, OpenAI-compatible inference router. Bring your own key, set one required start_within field, trade latency for cost."
 ---
 
-Same model. Half the bill. FlexInference is a deadline-aware, OpenAI-compatible inference router. You send the same Chat Completions or Responses requests you already send, with your own OpenAI key. Add one field, `start_within`, to tell us how long you can wait. Flex requests cost half the standard rate for the same model and the same response. We route each request to the cheapest tier that meets your deadline, and fall back to standard if flex cannot.
+Same model. Half the bill. FlexInference is a deadline-aware, OpenAI-compatible inference router. You send the same Chat Completions or Responses requests you already send, with your own OpenAI key. Add one required field, `start_within`, to tell us how long you can wait. Flex requests cost half the standard rate for the same model and the same response. We route each request to the cheapest tier that meets your deadline, and fall back to standard if flex cannot.
 
 <Info>
   FlexInference does not sell inference. You bring your own OpenAI key (BYOK), and OpenAI bills your account directly at whatever tier served the request. We add deadline-aware routing on top.
@@ -22,14 +22,14 @@ With FlexInference you express the trade-off declaratively:
   <Card title="Can wait a bit" icon="hourglass-half">
     `start_within: "00h-00m-30s"` races flex against your deadline, then falls back to standard.
   </Card>
-  <Card title="Standard" icon="equals">
-    `start_within: "standard"` uses the default tier and pricing.
+  <Card title="Default" icon="equals">
+    `start_within: "default"` uses OpenAI's default tier and pricing. (`"auto"` lets OpenAI pick.)
   </Card>
 </CardGroup>
 
 ## Drop-in compatible
 
-The base URL is the only thing you change. Everything else — streaming, tool calling, structured outputs, vision, reasoning — works exactly as it does against OpenAI.
+Point the base URL at FlexInference and add the required `start_within` field. Everything else - streaming, tool calling, structured outputs, vision, reasoning - works exactly as it does against OpenAI.
 
 ```
 https://api.flexinference.com/v1
