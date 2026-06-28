@@ -3,9 +3,11 @@ title: "Supported models"
 description: "The models FlexInference routes, and the inputs they accept."
 ---
 
-FlexInference proxies **any** OpenAI model for `default`, `priority`, and `auto` requests. The models below additionally support the **flex race** - the duration form of [`start_within`](/deadline-routing). Pass the model by its **alias** (for example `gpt-5.5`), not a dated snapshot.
+FlexInference routes to **OpenAI** and **Google Gemini**, and proxies **any** model for `default`, `priority`, and `auto` requests. The models below additionally support the **flex race** - the duration form of [`start_within`](/deadline-routing). Pass the model by its **alias** (for example `gpt-5.5` or `gemini-3.5-flash`), not a dated snapshot.
 
 ## Flex-capable models
+
+### OpenAI
 
 <CardGroup cols={2}>
   <Card title="GPT-5.5" icon="layer-group">
@@ -25,7 +27,21 @@ FlexInference proxies **any** OpenAI model for `default`, `priority`, and `auto`
   </Card>
 </CardGroup>
 
-A **duration** `start_within` on a model that isn't on this list returns `400 model_not_flex_capable` - the flex race only works on flex-capable models. Those same models still work with `default`, `priority`, or `auto`, which proxy any model straight to OpenAI.
+### Gemini
+
+<CardGroup cols={2}>
+  <Card title="Gemini 3.5 / 3.1" icon="layer-group">
+    `gemini-3.5-flash`, `gemini-3.1-pro-preview`, `gemini-3.1-flash-lite`
+  </Card>
+  <Card title="Gemini 3 preview" icon="layer-group">
+    `gemini-3-flash-preview`
+  </Card>
+  <Card title="Gemini 2.5" icon="layer-group">
+    `gemini-2.5-pro`, `gemini-2.5-flash`, `gemini-2.5-flash-lite`
+  </Card>
+</CardGroup>
+
+A **duration** `start_within` on a model that isn't on this list returns `400 model_not_flex_capable` - the flex race only works on flex-capable models. Those same models still work with `default`, `priority`, or `auto`, which proxy any model straight to its provider. For Gemini, `default` maps to Gemini's **standard** tier; Gemini has no `auto` tier, so `auto` on a Gemini model returns `400 auto_unsupported_for_gemini`.
 
 ## Inputs
 
@@ -36,6 +52,10 @@ These models accept the input types you'd expect from OpenAI:
 - **Files** — PDFs and other file inputs supported by the Responses API.
 
 Output is text (including tool calls, structured outputs, and reasoning). Streaming works on every model.
+
+<Note>
+  Image and file input apply to **OpenAI** models today. Gemini supports text, streaming, structured outputs, and function calling; Gemini image input is coming.
+</Note>
 
 <Note>
   New flex-capable models are added as OpenAI ships them. If a model you expect is missing, check that you're using its alias and that OpenAI offers flex pricing for it.

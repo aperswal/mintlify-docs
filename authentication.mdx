@@ -3,12 +3,13 @@ title: "Authentication"
 description: "Your FlexInference API key and your BYOK OpenAI key."
 ---
 
-There are two keys in play. Keep them straight:
+You have your FlexInference API key plus a **provider key** (OpenAI and/or Gemini) you bring yourself. Keep them straight:
 
 | Key | Looks like | Who it identifies | Where it lives |
 | --- | --- | --- | --- |
 | **FlexInference API key** | `flex_live_…` | You, to FlexInference | Sent as the `Authorization` header on every request |
 | **OpenAI key (BYOK)** | `sk-…` | You, to OpenAI | Stored encrypted in the dashboard; never sent by you on a request |
+| **Gemini key (BYOK)** | `AIza…` | You, to Google | Stored encrypted in the dashboard; never sent by you on a request |
 
 ## FlexInference API key
 
@@ -27,13 +28,13 @@ A malformed or unknown key returns `401 invalid_api_key`. Keys carry a checksum,
   Treat `flex_live_` keys as secrets. Don't commit them or ship them in client-side code. If a key leaks, revoke it in the dashboard and create a new one.
 </Tip>
 
-## Your OpenAI key (BYOK)
+## Your provider keys (BYOK)
 
-FlexInference does not resell inference. You add your own OpenAI key once in the dashboard, and we use it to call OpenAI on your behalf. OpenAI bills your account directly.
+FlexInference does not resell inference. You add your own provider key once in the dashboard - an **OpenAI** key (`sk-…`) for GPT models, a **Gemini** key (`AIza…`) for Gemini models, or both - and we use the matching key to call that provider on your behalf. The provider bills your account directly. We pick the key by the model: a `gemini-*` model uses your Gemini key, everything else uses your OpenAI key.
 
-Your key is encrypted at rest with a per-organization binding, so it can only ever be used for your organization. We never log it, and we never return it.
+Each key is encrypted at rest with a per-organization binding, so it can only ever be used for your organization. We never log it, and we never return it.
 
-If you haven't added a BYOK key yet, requests return `400 no_byok_key`. Add your key in the dashboard and try again.
+If the key a request needs isn't configured, you get `400 no_byok_key` (OpenAI) or `400 no_gemini_key` (Gemini). Add the key in the dashboard and try again.
 
 <Info>
   Because billing is on your OpenAI account, your existing OpenAI rate limits, quotas, and spend controls all still apply.

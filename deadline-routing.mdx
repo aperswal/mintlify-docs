@@ -13,7 +13,7 @@ description: "The start_within field, the flex race, and automatic fallback."
     { "start_within": "default" }
     ```
 
-    Routes to OpenAI's **default** (standard) tier at standard pricing - the normal OpenAI experience. Works with any model.
+    Routes to the provider's **standard** real-time tier at standard pricing - OpenAI's `default` or Gemini's `standard`. Works with any model.
   </Tab>
   <Tab title="priority">
     ```json
@@ -27,7 +27,7 @@ description: "The start_within field, the flex race, and automatic fallback."
     { "start_within": "auto" }
     ```
 
-    Routes to OpenAI's **auto** service tier and lets OpenAI choose the tier. Works with any model. (This is OpenAI's `service_tier: auto`, not a FlexInference auto-routing feature.)
+    Routes to OpenAI's **auto** service tier and lets OpenAI choose the tier. (This is OpenAI's `service_tier: auto`, not a FlexInference auto-routing feature.) **OpenAI only** - Gemini has no auto tier, so `auto` on a Gemini model returns `400 auto_unsupported_for_gemini`.
   </Tab>
   <Tab title="a duration">
     ```json
@@ -38,11 +38,11 @@ description: "The start_within field, the flex race, and automatic fallback."
   </Tab>
 </Tabs>
 
-`default`, `priority`, and `auto` proxy **any** model straight to OpenAI. Only the duration form runs the flex race, and it requires a flex-capable [model](/models); a duration on any other model returns `400 model_not_flex_capable`.
+`default`, `priority`, and `auto` proxy **any** model straight to its provider (OpenAI or Gemini). Only the duration form runs the flex race, and it requires a flex-capable [model](/models); a duration on any other model returns `400 model_not_flex_capable`.
 
 ## The flex race
 
-When you give a duration, we try to serve your request from OpenAI's **flex** tier, which is billed at half the standard rate but isn't guaranteed capacity. We hold your response and watch the upstream:
+When you give a duration, we try to serve your request from the provider's **flex** tier (OpenAI or Gemini), which is billed at half the standard rate but isn't guaranteed capacity. We hold your response and watch the upstream:
 
 <Steps>
   <Step title="Fire flex">
@@ -52,7 +52,7 @@ When you give a duration, we try to serve your request from OpenAI's **flex** ti
     If OpenAI starts the request in time, we commit. Your response streams back as normal, billed at flex rates. The response shows `"service_tier": "flex"`.
   </Step>
   <Step title="Fall back to standard">
-    If flex can't start in time, we cancel it and reissue on the standard tier so you still get an answer. The response shows `"service_tier": "default"`.
+    If flex can't start in time, we cancel it and reissue on the standard tier so you still get an answer. The response shows `"service_tier": "default"` (OpenAI) or `"standard"` (Gemini).
   </Step>
 </Steps>
 
