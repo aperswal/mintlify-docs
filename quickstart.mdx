@@ -72,6 +72,17 @@ This guide takes you from signing up to a working request that picks the cheapes
     console.log(resp.output_text);
     ```
 
+    ```bash curl (Gemini, Interactions)
+    curl https://api.flexinference.com/v1/interactions \
+      -H "Authorization: Bearer $FLEX_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "model": "gemini-3.5-flash",
+        "input": "Write a haiku about cheap GPUs.",
+        "start_within": "00h-00m-30s"
+      }'
+    ```
+
     </CodeGroup>
   </Step>
 </Steps>

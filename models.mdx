@@ -51,7 +51,7 @@ These models accept the input types you'd expect from OpenAI:
 - **Images** — pass image URLs or base64 data URLs. Data URLs are the most reliable.
 - **Files** — PDFs and other file inputs supported by the Responses API.
 
-Output is text (including tool calls, structured outputs, and reasoning). Streaming works on every model.
+Output is text (including tool calls, structured outputs, and reasoning). Streaming works on every model. On Gemini, `reasoning.effort` maps to a per-model `thinking_level` and may be clamped to the range that model supports.
 
 <Note>
   Text, streaming, structured outputs, function calling, image input, file input, and web search work on **both** OpenAI and Gemini. For web search, send a Responses `web_search` tool; on Gemini we map it to `google_search`. Pass files as base64 data URLs (PDFs are the most reliable on Gemini).

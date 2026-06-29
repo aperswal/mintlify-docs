@@ -33,11 +33,12 @@ These originate in our layer.
 | `400` | `invalid_start_within` | The `start_within` value is malformed or out of range (the retired `standard` value lands here too). |
 | `400` | `model_not_flex_capable` | A duration `start_within` named a model that does not support the flex race. Use a flex-capable [model](/models), or set `start_within` to `default`, `priority`, or `auto`. |
 | `400` | `auto_unsupported_for_gemini` | `start_within: "auto"` on a Gemini model. Gemini has no auto tier; use `default`, `priority`, or a duration. |
-| `400` | `service_tier_not_allowed` | A caller-supplied `service_tier`. The tier is controlled by `start_within`; remove `service_tier`. |
+| `400` | `service_tier_not_allowed` | A caller-supplied `service_tier`. The tier is controlled by `start_within`; remove `service_tier`. Applies on `/v1/interactions` too. |
 | `400` | `unsupported_parameter` | A Chat parameter with no Responses equivalent was set. See [SDKs](/sdks). |
+| `400` | `unsupported_generation_config` | On `/v1/interactions`, a `generation_config.seed` or `generation_config.stop_sequences` was set; neither has a Responses equivalent on the models we serve. |
 | `400` | `unsupported_value` | `n` must be `1` or omitted — the Responses API returns a single generation. |
 | `400` | `invalid_json` / `invalid_body` | The body isn't valid JSON, or isn't a JSON object. |
-| `404` | `unknown_url` | Wrong path. Use `/v1/responses` or `/v1/chat/completions`. |
+| `404` | `unknown_url` | Wrong path. Use `/v1/responses`, `/v1/chat/completions`, or `/v1/interactions`. |
 | `405` | `method_not_allowed` | Use `POST`. |
 | `500` | `internal_error` | Something failed inside FlexInference. |
 

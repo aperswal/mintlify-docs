@@ -10,10 +10,11 @@ Base URL   https://api.flexinference.com/v1
 Auth       Authorization: Bearer flex_live_...
 ```
 
-Both endpoints are supported, and translated faithfully in both directions:
+Three endpoints are supported, and translated faithfully in both directions:
 
-- `POST /v1/responses` — the Responses API
-- `POST /v1/chat/completions` — the Chat Completions API
+- `POST /v1/responses`: the Responses API
+- `POST /v1/chat/completions`: the Chat Completions API
+- `POST /v1/interactions`: the Interactions API (works with OpenAI and Gemini models)
 
 ## Configure the client
 
@@ -152,6 +153,71 @@ console.log(resp.choices[0].message.content);
 ```
 
 </CodeGroup>
+
+## Interactions
+
+The Interactions endpoint is a third caller format that works with **both** OpenAI and Gemini models. `start_within` applies identically. Send `input` as a string, a content-array of parts, or a multi-turn step list; `system_instruction`, `tools`, and `response_format` map to the same upstream features.
+
+<CodeGroup>
+
+```python Python
+resp = client.interactions.create(
+    model="gemini-3.5-flash",
+    input="Summarize this contract.",
+    extra_body={"start_within": "00h-01m-00s"},
+)
+print(resp.steps[0].content[0].text)
+```
+
+```typescript Node
+const resp = await client.interactions.create({
+  model: "gemini-3.5-flash",
+  input: "Summarize this contract.",
+  start_within: "00h-01m-00s",
+} as any);
+
+console.log(resp.steps[0].content[0].text);
+```
+
+```bash curl
+curl "$FLEX_BASE_URL/interactions" \
+  -H "Authorization: Bearer $FLEX_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gemini-3.5-flash",
+    "input": "Summarize this contract.",
+    "start_within": "00h-01m-00s"
+  }'
+```
+
+</CodeGroup>
+
+The response is an `interaction` object. Output lives in `steps`; token counts split across input, output, thought, cached, tool-use, and total:
+
+```json
+{
+  "id": "interaction_...",
+  "object": "interaction",
+  "status": "completed",
+  "model": "gemini-3.5-flash",
+  "created": 1750000000,
+  "updated": 1750000000,
+  "service_tier": "flex",
+  "usage": {
+    "total_input_tokens": 1200,
+    "total_output_tokens": 180,
+    "total_thought_tokens": 64,
+    "total_cached_tokens": 0,
+    "total_tokens": 1444,
+    "total_tool_use_tokens": 0
+  },
+  "steps": [
+    { "type": "model_output", "content": [{ "type": "text", "text": "..." }] }
+  ]
+}
+```
+
+`status` is `requires_action` when a step is a `function_call`, `incomplete` when output is truncated, `failed` on error, and `completed` otherwise. `generation_config.thinking_level` maps to `reasoning.effort`. `seed`, `stop_sequences`, and a caller-supplied `service_tier` are refused; see [Errors](/errors).
 
 ## Everything else works unchanged
 

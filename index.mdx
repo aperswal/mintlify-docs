@@ -3,7 +3,7 @@ title: "Introduction"
 description: "A deadline-aware, OpenAI-compatible inference router. Bring your own key, set one required start_within field, trade latency for cost."
 ---
 
-Same model. Half the bill. FlexInference is a deadline-aware, OpenAI-compatible inference router. You send the same Chat Completions or Responses requests you already send, with your own OpenAI key. Add one required field, `start_within`, to tell us how long you can wait. Flex requests cost half the standard rate for the same model and the same response. We route each request to the cheapest tier that meets your deadline, and fall back to standard if flex cannot.
+Same model. Half the bill. FlexInference is a deadline-aware, OpenAI-compatible inference router. You send the same Chat Completions, Responses, or Interactions requests you already send, with your own OpenAI or Gemini key. Add one required field, `start_within`, to tell us how long you can wait. Flex requests cost half the standard rate for the same model and the same response. We route each request to the cheapest tier that meets your deadline, and fall back to standard if flex cannot.
 
 <Info>
   FlexInference does not sell inference. You bring your own OpenAI key (BYOK), and OpenAI bills your account directly at whatever tier served the request. We add deadline-aware routing on top.
