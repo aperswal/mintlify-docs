@@ -13,21 +13,21 @@ description: "The start_within field, the flex race, and automatic fallback."
     { "start_within": "default" }
     ```
 
-    Routes to the provider's **standard** real-time tier at standard pricing - OpenAI's `default` or Gemini's `standard`. Works with any model.
+    Routes to the provider's **standard** real-time tier at standard pricing - OpenAI's `default`, Gemini's `standard`, or Anthropic's `standard_only`. Works with any model.
   </Tab>
   <Tab title="priority">
     ```json
     { "start_within": "priority" }
     ```
 
-    Routes to OpenAI's **priority** tier for the fastest possible start. Best for interactive, latency-critical paths. Priority is the most expensive tier. Works with any model.
+    Routes to OpenAI's **priority** tier for the fastest possible start. Best for interactive, latency-critical paths. Priority is the most expensive tier. Works with any model. On Anthropic it is **best-effort**: Claude has no literal priority tier, so we map it to Anthropic's `auto`.
   </Tab>
   <Tab title="auto">
     ```json
     { "start_within": "auto" }
     ```
 
-    Routes to OpenAI's **auto** service tier and lets OpenAI choose the tier. (This is OpenAI's `service_tier: auto`, not a FlexInference auto-routing feature.) **OpenAI only** - Gemini has no auto tier, so `auto` on a Gemini model returns `400 auto_unsupported_for_gemini`.
+    Lets the provider choose the tier. On OpenAI this is `service_tier: auto`; on Anthropic it maps to Anthropic's `auto`. (This is the provider's own auto tier, not a FlexInference auto-routing feature.) Supported on **OpenAI and Anthropic** - Gemini has no auto tier, so `auto` on a Gemini model returns `400 auto_unsupported_for_gemini`.
   </Tab>
   <Tab title="a duration">
     ```json
@@ -38,7 +38,11 @@ description: "The start_within field, the flex race, and automatic fallback."
   </Tab>
 </Tabs>
 
-`default`, `priority`, and `auto` proxy **any** model straight to its provider (OpenAI or Gemini). Only the duration form runs the flex race, and it requires a flex-capable [model](/models); a duration on any other model returns `400 model_not_flex_capable`.
+`default`, `priority`, and `auto` proxy **any** model straight to its provider (OpenAI, Gemini, or Anthropic). Only the duration form runs the flex race, and it requires a flex-capable [model](/models); a duration on any other model returns `400 model_not_flex_capable`.
+
+<Note>
+  The flex race is **not available on Claude** - Anthropic has no flex tier. A duration `start_within` on a `claude-*` model returns `400 flex_unsupported_for_anthropic`; use `default`, `priority`, or `auto` instead.
+</Note>
 
 ## The flex race
 

@@ -3,13 +3,14 @@ title: "Authentication"
 description: "Your FlexInference API key and your BYOK OpenAI key."
 ---
 
-You have your FlexInference API key plus a **provider key** (OpenAI and/or Gemini) you bring yourself. Keep them straight:
+You have your FlexInference API key plus a **provider key** (OpenAI, Gemini, and/or Anthropic) you bring yourself. Keep them straight:
 
 | Key | Looks like | Who it identifies | Where it lives |
 | --- | --- | --- | --- |
 | **FlexInference API key** | `flex_live_…` | You, to FlexInference | Sent as the `Authorization` header on every request |
 | **OpenAI key (BYOK)** | `sk-…` | You, to OpenAI | Stored encrypted in the dashboard; never sent by you on a request |
 | **Gemini key (BYOK)** | `AIza…` | You, to Google | Stored encrypted in the dashboard; never sent by you on a request |
+| **Anthropic key (BYOK)** | `sk-ant-…` | You, to Anthropic | Stored encrypted in the dashboard; never sent by you on a request |
 
 ## FlexInference API key
 
@@ -30,11 +31,11 @@ A malformed or unknown key returns `401 invalid_api_key`. Keys carry a checksum,
 
 ## Your provider keys (BYOK)
 
-FlexInference does not resell inference. You add your own provider key once in the dashboard - an **OpenAI** key (`sk-…`) for GPT models, a **Gemini** key (`AIza…`) for Gemini models, or both - and we use the matching key to call that provider on your behalf. The provider bills your account directly. We pick the key by the model: a `gemini-*` model uses your Gemini key, everything else uses your OpenAI key.
+FlexInference does not resell inference. You add your own provider key once in the dashboard - an **OpenAI** key (`sk-…`) for GPT models, a **Gemini** key (`AIza…`) for Gemini models, an **Anthropic** key (`sk-ant-…`) for Claude models, or any mix - and we use the matching key to call that provider on your behalf. The provider bills your account directly. We pick the key by the model: a `gemini-*` model uses your Gemini key, a `claude-*` model uses your Anthropic key, everything else uses your OpenAI key.
 
 Each key is encrypted at rest with a per-organization binding, so it can only ever be used for your organization. We never log it, and we never return it.
 
-If the key a request needs isn't configured, you get `400 no_byok_key` (OpenAI) or `400 no_gemini_key` (Gemini). Add the key in the dashboard and try again.
+If the key a request needs isn't configured, you get `400 no_byok_key` (OpenAI), `400 no_gemini_key` (Gemini), or `400 no_anthropic_key` (Anthropic). Add the key in the dashboard and try again.
 
 <Info>
   Because billing is on your OpenAI account, your existing OpenAI rate limits, quotas, and spend controls all still apply.

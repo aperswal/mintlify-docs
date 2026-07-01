@@ -3,7 +3,7 @@ title: "Supported models"
 description: "The models FlexInference routes, and the inputs they accept."
 ---
 
-FlexInference routes to **OpenAI** and **Google Gemini**, and proxies **any** model for `default`, `priority`, and `auto` requests. The models below additionally support the **flex race** - the duration form of [`start_within`](/deadline-routing). Pass the model by its **alias** (for example `gpt-5.5` or `gemini-3.5-flash`), not a dated snapshot.
+FlexInference routes to **OpenAI**, **Google Gemini**, and **Anthropic**, and proxies **any** model for `default`, `priority`, and `auto` requests. The models below additionally support the **flex race** - the duration form of [`start_within`](/deadline-routing). Pass the model by its **alias** (for example `gpt-5.5` or `gemini-3.5-flash`), not a dated snapshot.
 
 ## Flex-capable models
 
@@ -42,6 +42,27 @@ FlexInference routes to **OpenAI** and **Google Gemini**, and proxies **any** mo
 </CardGroup>
 
 A **duration** `start_within` on a model that isn't on this list returns `400 model_not_flex_capable` - the flex race only works on flex-capable models. Those same models still work with `default`, `priority`, or `auto`, which proxy any model straight to its provider. For Gemini, `default` maps to Gemini's **standard** tier; Gemini has no `auto` tier, so `auto` on a Gemini model returns `400 auto_unsupported_for_gemini`.
+
+## Anthropic (Claude)
+
+Claude models route to Anthropic and are **proxy-only**: they support `default`, `priority`, and `auto`, but **not** the flex race. A duration `start_within` on a `claude-*` model returns `400 flex_unsupported_for_anthropic`, because Anthropic has no flex tier. `default` maps to Anthropic's **standard_only** service tier, `auto` lets Anthropic pick, and `priority` is best-effort (mapped to `auto`, since Anthropic rejects a literal priority tier). Every `claude-*` request **must** set `max_output_tokens` (`max_tokens` on `/v1/messages`); without it you get `400 missing_max_tokens`.
+
+<CardGroup cols={2}>
+  <Card title="Opus" icon="layer-group">
+    `claude-opus-4-8`, `claude-opus-4-7`, `claude-opus-4-6`, `claude-opus-4-5`, `claude-opus-4-1`
+  </Card>
+  <Card title="Sonnet" icon="layer-group">
+    `claude-sonnet-5`, `claude-sonnet-4-6`, `claude-sonnet-4-5`
+  </Card>
+  <Card title="Haiku" icon="layer-group">
+    `claude-haiku-4-5`
+  </Card>
+  <Card title="Fable" icon="layer-group">
+    `claude-fable-5`
+  </Card>
+</CardGroup>
+
+Claude is reachable through any caller format - `/v1/responses`, `/v1/chat/completions`, `/v1/interactions`, and the Anthropic-native [`/v1/messages`](/sdks#messages) - since FlexInference translates each to Anthropic's Messages API. The served tier is authoritative from Anthropic: a `standard_only` request is reported as `"service_tier": "standard"` on the response.
 
 ## Inputs
 

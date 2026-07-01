@@ -83,6 +83,18 @@ This guide takes you from signing up to a working request that picks the cheapes
       }'
     ```
 
+    ```bash curl (Claude, Messages)
+    curl https://api.flexinference.com/v1/messages \
+      -H "Authorization: Bearer $FLEX_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "model": "claude-opus-4-8",
+        "max_tokens": 1024,
+        "messages": [{ "role": "user", "content": "Write a haiku about cheap GPUs." }],
+        "start_within": "default"
+      }'
+    ```
+
     </CodeGroup>
   </Step>
 </Steps>

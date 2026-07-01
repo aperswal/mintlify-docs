@@ -10,11 +10,12 @@ Base URL   https://api.flexinference.com/v1
 Auth       Authorization: Bearer flex_live_...
 ```
 
-Three endpoints are supported, and translated faithfully in both directions:
+Four endpoints are supported, and translated faithfully in both directions:
 
 - `POST /v1/responses`: the Responses API
 - `POST /v1/chat/completions`: the Chat Completions API
-- `POST /v1/interactions`: the Interactions API (works with OpenAI and Gemini models)
+- `POST /v1/interactions`: the Interactions API (works with OpenAI, Gemini, and Anthropic models)
+- `POST /v1/messages`: the Anthropic Messages API (works with **any** model)
 
 ## Configure the client
 
@@ -218,6 +219,70 @@ The response is an `interaction` object. Output lives in `steps`; token counts s
 ```
 
 `status` is `requires_action` when a step is a `function_call`, `incomplete` when output is truncated, `failed` on error, and `completed` otherwise. `generation_config.thinking_level` maps to `reasoning.effort`. `seed`, `stop_sequences`, and a caller-supplied `service_tier` are refused; see [Errors](/errors).
+
+## Messages
+
+The Messages endpoint is a fourth caller format that speaks the **Anthropic Messages** shape - in and out - and works with **any** model, since FlexInference translates it to and from the canonical form. `start_within` applies identically and is required. Anthropic requires `max_tokens`, so it is required here too; omit it and you get `400 missing_max_tokens`. Send `messages` as `{role, content}` turns, with `content` a string or an array of content blocks; `system`, `tools`, `tool_choice`, and `thinking` map to the same upstream features.
+
+<CodeGroup>
+
+```python Python
+resp = client.messages.create(
+    model="claude-opus-4-8",
+    max_tokens=1024,
+    messages=[{"role": "user", "content": "Summarize this contract."}],
+    extra_body={"start_within": "default"},
+)
+print(resp.content[0].text)
+```
+
+```typescript Node
+const resp = await client.messages.create({
+  model: "claude-opus-4-8",
+  max_tokens: 1024,
+  messages: [{ role: "user", content: "Summarize this contract." }],
+  start_within: "default",
+} as any);
+
+console.log(resp.content[0].text);
+```
+
+```bash curl
+curl "$FLEX_BASE_URL/messages" \
+  -H "Authorization: Bearer $FLEX_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "claude-opus-4-8",
+    "max_tokens": 1024,
+    "messages": [{ "role": "user", "content": "Summarize this contract." }],
+    "start_within": "default"
+  }'
+```
+
+</CodeGroup>
+
+The response is an Anthropic `message` object. Output lives in `content` as `text`, `thinking`, and `tool_use` blocks; the served tier is authoritative from `usage.service_tier`:
+
+```json
+{
+  "id": "msg_...",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-opus-4-8",
+  "content": [{ "type": "text", "text": "..." }],
+  "stop_reason": "end_turn",
+  "usage": {
+    "input_tokens": 1200,
+    "cache_read_input_tokens": 0,
+    "cache_creation_input_tokens": 0,
+    "output_tokens": 180,
+    "output_tokens_details": { "thinking_tokens": 64 },
+    "service_tier": "standard"
+  }
+}
+```
+
+`stop_reason` is `end_turn` on a normal finish, `max_tokens` when truncated, `tool_use` when the model calls a tool, and `refusal` when it declines. `thinking` maps to `reasoning.effort` per model. `top_k`, `stop_sequences`, `cache_control` blocks, and `document`/`file` blocks with `citations` are refused with `unsupported_parameter`, and a caller-supplied `service_tier` with `service_tier_not_allowed`; see [Errors](/errors).
 
 ## Everything else works unchanged
 
