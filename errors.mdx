@@ -8,46 +8,51 @@ FlexInference uses OpenAI's error envelope, so any OpenAI client parses our erro
 ```json
 {
   "error": {
-    "message": "Incorrect API key provided.",
+    "message": "The API key on this request was rejected - either it does not match FlexInference's key format (`flex_live_` followed by 24 hex characters and a 6-hex checksum), or it is well-formed but does not match any key on record. Copy the exact, current key from the FlexInference dashboard under Settings -> API keys, then send it as `Authorization: Bearer <key>`.",
     "type": "authentication_error",
     "code": "invalid_api_key",
-    "param": null
+    "param": null,
+    "doc_url": "https://flexinference.mintlify.app/errors#invalid_api_key"
   }
 }
 ```
 
-`type` mirrors OpenAI's broad categories (`invalid_request_error`, `authentication_error`, and our own `flexinference_error` for internal faults). `code` is the machine-readable reason. `param` names the offending field when there is one.
+`type` mirrors OpenAI's broad categories (`invalid_request_error`, `authentication_error`, `rate_limit_error`, and our own `flexinference_error` for internal faults). `code` is the machine-readable reason. `param` names the offending field when there is one. `doc_url` is an additive field (existing clients that only read `message`/`type`/`code`/`param` are unaffected): when FlexInference recognizes the code, it is a deep link straight to that code's row below; otherwise it is `null`.
 
 ## FlexInference codes
 
-These originate in our layer.
+These originate in our layer. Every message below states what was wrong, the specific rule that made it wrong, and how to fix it, so branching on `error.code` and showing `error.message` directly to a developer is usually enough on its own.
 
 | Status | Code | Meaning |
 | --- | --- | --- |
-| `401` | `missing_api_key` | No `Authorization: Bearer` header. |
-| `401` | `invalid_api_key` | The `flex_live_` key is malformed or unknown. |
-| `400` | `no_byok_key` | No OpenAI key configured for your org. Add one in the dashboard. |
-| `400` | `no_gemini_key` | No Gemini key configured for your org (a `gemini-*` model was requested). Add one in the dashboard. |
-| `400` | `no_anthropic_key` | No Anthropic key configured for your org (a `claude-*` model was requested). Add one in the dashboard. |
-| `400` | `missing_model` | The `model` field is missing. |
-| `400` | `missing_start_within` | The required `start_within` field is missing. Set it to `default`, `priority`, `auto`, or a duration `HHh-MMm-SSs`. |
-| `400` | `invalid_start_within` | The `start_within` value is malformed or out of range (the retired `standard` value lands here too). |
-| `400` | `model_not_flex_capable` | A duration `start_within` named a model that does not support the flex race. Use a flex-capable [model](/models), or set `start_within` to `default`, `priority`, or `auto`. |
-| `400` | `auto_unsupported_for_gemini` | `start_within: "auto"` on a Gemini model. Gemini has no auto tier; use `default`, `priority`, or a duration. |
-| `400` | `flex_unsupported_for_anthropic` | A duration `start_within` on a `claude-*` model. Anthropic has no flex tier; use `default`, `priority`, or `auto`. |
-| `400` | `missing_max_tokens` | A `claude-*` request reached Anthropic with no token cap. Set `max_output_tokens` (`max_completion_tokens` on Chat, `max_tokens` on `/v1/messages`); Anthropic requires it. |
-| `400` | `service_tier_not_allowed` | A caller-supplied `service_tier`. The tier is controlled by `start_within`; remove `service_tier`. Applies on `/v1/interactions` and `/v1/messages` too. |
-| `400` | `unsupported_parameter` | A parameter with no clean canonical home was set. On Chat: a param with no Responses equivalent. On `/v1/messages`: `top_k`, `stop_sequences`, `cache_control` blocks, or `document`/`file` content blocks with `citations` (deferred). See [SDKs](/sdks). |
-| `400` | `unsupported_generation_config` | On `/v1/interactions`, a `generation_config.seed` or `generation_config.stop_sequences` was set; neither has a Responses equivalent on the models we serve. |
-| `400` | `unsupported_value` | `n` must be `1` or omitted — the Responses API returns a single generation. |
-| `400` | `invalid_json` / `invalid_body` | The body isn't valid JSON, or isn't a JSON object. |
-| `404` | `unknown_url` | Wrong path. Use `/v1/responses`, `/v1/chat/completions`, `/v1/interactions`, or `/v1/messages`. |
-| `405` | `method_not_allowed` | Use `POST`. |
-| `500` | `internal_error` | Something failed inside FlexInference. |
+| `401` | <span id="missing_api_key" /> `missing_api_key` | No `Authorization` header, or it did not match the required `Bearer <key>` shape. Add `Authorization: Bearer <your key>`. |
+| `401` | <span id="invalid_api_key" /> `invalid_api_key` | The key does not match FlexInference's format (`flex_live_` + 24 hex chars + a 6-hex checksum), or it is well-formed but unknown (revoked, regenerated, or mistyped). Copy the current key from the dashboard. |
+| `429` | <span id="rate_limit_exceeded" /> `rate_limit_exceeded` | Too many failed-authentication attempts from your client IP, or too many requests from your organization in the current window. Back off for the number of seconds in the `Retry-After` header (60s for the auth-flood limiter, 5s for the per-org limiter) before retrying. |
+| `413` | <span id="request_too_large" /> `request_too_large` | The request body is over FlexInference's 1,000,000-byte limit (checked against both the declared `Content-Length` and the bytes actually streamed). Shrink the payload - large inline base64 files are the usual cause - or reference a hosted URL instead. |
+| `400` | <span id="no_byok_key" /> `no_byok_key` | No OpenAI key configured for your org (or the stored key failed to decrypt, which fails closed the same as missing). Add one in the dashboard under Settings -> API keys. |
+| `400` | <span id="no_gemini_key" /> `no_gemini_key` | Same as `no_byok_key`, for a `gemini-*` model: no Gemini key configured for your org. Add one in the dashboard. |
+| `400` | <span id="no_anthropic_key" /> `no_anthropic_key` | Same as `no_byok_key`, for a `claude-*` model: no Anthropic key configured for your org. Add one in the dashboard. |
+| `400` | <span id="missing_model" /> `missing_model` | The `model` field is missing, empty, or not a string. Add a non-empty string, for example `"model": "gpt-5.5"`. |
+| `400` | <span id="missing_start_within" /> `missing_start_within` | The required `start_within` field is missing - it has no default. Set it to `default`, `priority`, `auto`, or a duration `HHh-MMm-SSs`. |
+| `400` | <span id="invalid_start_within" /> `invalid_start_within` | `start_within` is not a string, doesn't match one of the four accepted forms, or (for a duration) resolves outside the 5-second-to-600-second (10 minute) allowed window. Match the exact shape, and keep any duration inside 5s-600s. |
+| `400` | <span id="model_not_flex_capable" /> `model_not_flex_capable` | A duration `start_within` (the flex race) named a model outside that provider's flex-capable allow-list (OpenAI and Gemini each keep their own list; Anthropic has none). Use a flex-capable [model](/models), or set `start_within` to `default`, `priority`, or `auto` to run this model without the race. |
+| `400` | <span id="auto_unsupported_for_gemini" /> `auto_unsupported_for_gemini` | `start_within: "auto"` on a Gemini model. Gemini's tiers are only `flex`, `standard`, and `priority` - there is no `auto` to resolve to. Use `default`, `priority`, or a duration instead. |
+| `400` | <span id="flex_unsupported_for_anthropic" /> `flex_unsupported_for_anthropic` | A duration `start_within` on a `claude-*` model. Anthropic has no flex tier at all (a provider limitation, not a model-specific one). Use `default`, `priority`, or `auto` instead. |
+| `400` | <span id="missing_max_tokens" /> `missing_max_tokens` | A `claude-*` request reached Anthropic with no token cap; Anthropic's Messages API requires one and FlexInference will not synthesize a silent default. Set `max_output_tokens` (Responses), `max_completion_tokens` (Chat), or `max_tokens` (`/v1/messages`). |
+| `400` | <span id="service_tier_not_allowed" /> `service_tier_not_allowed` | A caller-supplied `service_tier`. FlexInference derives the tier from `start_within` and would otherwise silently overwrite your value, so it rejects the field instead. Remove `service_tier` and express the same intent through `start_within`. Applies on `/v1/interactions` and `/v1/messages` too. |
+| `400` | <span id="unsupported_parameter" /> `unsupported_parameter` | A parameter with no Responses-API equivalent on the models we serve was set. On Chat: any of `presence_penalty`, `frequency_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop`, `prediction`, `audio`, non-text `modalities`, or `web_search_options` (use a Responses `web_search` tool instead). On `/v1/messages`: `top_k`, `stop_sequences`, `cache_control` blocks, or `document`/`file` content blocks with `citations` (all deferred). Remove the named field; `error.param` names exactly which one. See [SDKs](/sdks). |
+| `400` | <span id="unsupported_generation_config" /> `unsupported_generation_config` | On `/v1/interactions`, `generation_config.seed` or `generation_config.stop_sequences` was set; neither has a Responses equivalent on the models we serve. Remove the named field. |
+| `400` | <span id="unsupported_value" /> `unsupported_value` | Chat Completions `n` was set to something other than `1`. The underlying Responses API always produces a single generation, so `n` must be `1` or omitted. |
+| `400` | <span id="invalid_json" /> `invalid_json` | The body isn't syntactically valid JSON (`JSON.parse` failed). Fix the syntax - a trailing comma or unquoted key is a common cause. |
+| `400` | <span id="invalid_body" /> `invalid_body` | The body parsed as JSON but the top-level value isn't a JSON object (it's an array, string, number, boolean, or null). Wrap your fields in a single `{...}` object. |
+| `404` | <span id="unknown_url" /> `unknown_url` | Wrong path. Use `/v1/responses`, `/v1/chat/completions`, `/v1/interactions`, or `/v1/messages`. |
+| `405` | <span id="method_not_allowed" /> `method_not_allowed` | The path exists, but every FlexInference endpoint only accepts `POST`. Send a `POST` with a JSON body instead. |
+| `499` | <span id="client_closed_request" /> `client_closed_request` | The client disconnected (closed tab, cancelled fetch, or a client-side timeout) before FlexInference finished responding. Not counted as a service failure. If unintentional, raise your client timeout - a flex race can legitimately take up to 10 minutes - and avoid cancelling the request early. |
+| `500` | <span id="internal_error" /> `internal_error` | Something failed inside FlexInference outside of input validation - our bug, not your request. Safe to retry once; if it persists, contact support with the approximate timestamp and your org. |
 
 ## Pass-through errors
 
-Anything that isn't a FlexInference-layer error is **OpenAI's response, returned verbatim** — same status, same body. A `400` for a bad parameter, a `401` for an invalid OpenAI key, a `429` rate limit on the standard attempt: you see exactly what OpenAI sent. FlexInference never rewrites OpenAI's errors.
+Anything that isn't a FlexInference-layer error is **OpenAI's response, returned verbatim** — same status, same body. A `400` for a bad parameter, a `401` for an invalid OpenAI key, a `429` rate limit on the standard attempt: you see exactly what OpenAI sent. FlexInference never rewrites OpenAI's errors, and a pass-through error's `doc_url` is whatever (if anything) OpenAI itself sent - FlexInference does not add one.
 
 <Tip>
   Branch on `error.code` for FlexInference-specific handling (for example, prompt the user to add a BYOK key on `no_byok_key`), and treat unknown codes as ordinary OpenAI errors.
