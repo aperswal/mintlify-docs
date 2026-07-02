@@ -17,7 +17,7 @@ FlexInference uses OpenAI's error envelope, so any OpenAI client parses our erro
 }
 ```
 
-`type` mirrors OpenAI's broad categories (`invalid_request_error`, `authentication_error`, `rate_limit_error`, and our own `flexinference_error` for internal faults). `code` is the machine-readable reason. `param` names the offending field when there is one. `doc_url` is an additive field (existing clients that only read `message`/`type`/`code`/`param` are unaffected): when FlexInference recognizes the code, it is a deep link straight to that code's row below; otherwise it is `null`.
+`type` mirrors OpenAI's broad categories (`invalid_request_error`, `authentication_error`, `rate_limit_error`), plus two of our own: `flexinference_error` for internal faults and `billing_error` when a billing condition (like an overdue balance) pauses billable requests. `code` is the machine-readable reason. `param` names the offending field when there is one. `doc_url` is an additive field (existing clients that only read `message`/`type`/`code`/`param` are unaffected): when FlexInference recognizes the code, it is a deep link straight to that code's row below; otherwise it is `null`.
 
 ## FlexInference codes
 
@@ -28,6 +28,7 @@ These originate in our layer. Every message below states what was wrong, the spe
 | `401` | <span id="missing_api_key" /> `missing_api_key` | No `Authorization` header, or it did not match the required `Bearer <key>` shape. Add `Authorization: Bearer <your key>`. |
 | `401` | <span id="invalid_api_key" /> `invalid_api_key` | The key does not match FlexInference's format (`flex_live_` + 24 hex chars + a 6-hex checksum), or it is well-formed but unknown (revoked, regenerated, or mistyped). Copy the current key from the dashboard. |
 | `429` | <span id="rate_limit_exceeded" /> `rate_limit_exceeded` | Too many failed-authentication attempts from your client IP, or too many requests from your organization in the current window. Back off for the number of seconds in the `Retry-After` header (60s for the auth-flood limiter, 5s for the per-org limiter) before retrying. |
+| `402` | <span id="payment_required" /> `payment_required` | This organization has an overdue balance or no payment method on file, so billable flex requests are paused. Free routing (`default`, `priority`, `auto`) and all Anthropic models keep working. Add or update a card on the dashboard [Billing](/billing) page, then retry. This is the only code with `type: billing_error`. |
 | `413` | <span id="request_too_large" /> `request_too_large` | The request body is over FlexInference's 1,000,000-byte limit (checked against both the declared `Content-Length` and the bytes actually streamed). Shrink the payload - large inline base64 files are the usual cause - or reference a hosted URL instead. |
 | `400` | <span id="no_byok_key" /> `no_byok_key` | No OpenAI key configured for your org (or the stored key failed to decrypt, which fails closed the same as missing). Add one in the dashboard under Settings -> API keys. |
 | `400` | <span id="no_gemini_key" /> `no_gemini_key` | Same as `no_byok_key`, for a `gemini-*` model: no Gemini key configured for your org. Add one in the dashboard. |
@@ -52,7 +53,7 @@ These originate in our layer. Every message below states what was wrong, the spe
 
 ## Pass-through errors
 
-Anything that isn't a FlexInference-layer error is **OpenAI's response, returned verbatim** — same status, same body. A `400` for a bad parameter, a `401` for an invalid OpenAI key, a `429` rate limit on the standard attempt: you see exactly what OpenAI sent. FlexInference never rewrites OpenAI's errors, and a pass-through error's `doc_url` is whatever (if anything) OpenAI itself sent - FlexInference does not add one.
+Anything that isn't a FlexInference-layer error is **OpenAI's response, returned verbatim** - same status, same body. A `400` for a bad parameter, a `401` for an invalid OpenAI key, a `429` rate limit on the standard attempt: you see exactly what OpenAI sent. FlexInference never rewrites OpenAI's errors, and a pass-through error's `doc_url` is whatever (if anything) OpenAI itself sent - FlexInference does not add one.
 
 <Tip>
   Branch on `error.code` for FlexInference-specific handling (for example, prompt the user to add a BYOK key on `no_byok_key`), and treat unknown codes as ordinary OpenAI errors.

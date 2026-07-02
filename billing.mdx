@@ -1,0 +1,52 @@
+---
+title: "Pricing and billing"
+description: "What FlexInference charges, how BYOK works, and when your card is charged."
+---
+
+FlexInference is **free to route**. The only thing you ever pay us is a commission on the flex requests that actually save you money - and even then, you keep the larger share.
+
+## What you pay
+
+FlexInference charges **20% of the money saved** on a flex request. A flex request is a duration [`start_within`](/deadline-routing) (the flex race) on a **priced, non-Anthropic model** - the flex-capable OpenAI and Gemini [models](/models).
+
+The saving is the difference between the provider's standard price for that call and the flex price the race actually won. We take 20% of that difference as commission; you keep the other 80%. If a flex request saves nothing, there is nothing to commission.
+
+<Note>
+  Commission is charged on the **saving**, never on the tokens. You are always better off than paying the standard price: worst case the saving is zero and so is the commission.
+</Note>
+
+## What is free
+
+- **All standard, `priority`, and `auto` routing**, on any model. These proxy straight to the provider with no flex race, so there is no saving to share and no commission.
+- **All Anthropic (Claude) models.** Claude is proxy-only - it has no flex tier, so a `claude-*` request is never a billable flex request. See [models](/models).
+
+Only a **priced flex request on an OpenAI or Gemini model** ever accrues commission.
+
+## Bring your own key (BYOK)
+
+FlexInference routes with **your** provider keys. Your provider (OpenAI, Gemini, or Anthropic) bills you **directly** for the tokens, at their rates. FlexInference adds **no markup** on tokens - we never touch your token spend. The only charge from FlexInference is the 20% flex commission described above.
+
+## How your card is charged
+
+Add or update a card on the dashboard **Billing** page. Commission accrues per flex request as you use the API, and:
+
+- Your card is charged **automatically, monthly**, once accrued commission reaches **$20**.
+- A balance **under $20 carries forward** to the next month and is charged when it crosses the threshold.
+
+## Past-due and the 402
+
+If a charge fails, or you owe commission with **no valid card on file**, the organization goes **past-due**. While past-due:
+
+- Billable flex requests are paused and return a [`402 payment_required`](/errors#payment_required).
+- **Free routing (`default`, `priority`, `auto`) and all Anthropic models keep working** - only priced flex is affected.
+
+To clear it, add or update a card on the dashboard **Billing** page, then retry.
+
+<CardGroup cols={2}>
+  <Card title="Pricing details" icon="tag" href="https://www.flexinference.com/pricing">
+    Full pricing on the FlexInference marketing site.
+  </Card>
+  <Card title="The 402 error" icon="triangle-exclamation" href="/errors#payment_required">
+    How `payment_required` looks on the wire and how to handle it.
+  </Card>
+</CardGroup>

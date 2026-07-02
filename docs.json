@@ -29,7 +29,8 @@
         "group": "Using the API",
         "pages": [
           "sdks",
-          "errors"
+          "errors",
+          "billing"
         ]
       }
     ],
