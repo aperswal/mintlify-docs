@@ -1,0 +1,78 @@
+---
+title: "MCP server"
+description: "Connect Claude, Cursor, and other agents to FlexInference over the Model Context Protocol."
+---
+
+FlexInference runs a Model Context Protocol (MCP) server so coding agents can work with your account directly. It is a remote, streamable-HTTP server reachable at:
+
+```
+https://mcp.flexinference.com/mcp
+```
+
+It exposes two groups of tools. Docs tools work with no login, so an agent can search the docs and look up any error code before you ever sign in. Account tools sit behind OAuth, one scope each, so an agent can read your usage or manage your keys only after you approve it.
+
+<Note>
+  This is separate from the inference API at `https://api.flexinference.com/v1`. The MCP server never runs inference and never sees your prompts or replies. It is for account and docs actions only.
+</Note>
+
+## Connect
+
+Add the server to any MCP client that supports remote HTTP servers (Claude, Cursor, and others). The config is the same everywhere:
+
+<CodeGroup>
+
+```json mcp.json
+{
+  "mcpServers": {
+    "flexinference": {
+      "type": "http",
+      "url": "https://mcp.flexinference.com/mcp"
+    }
+  }
+}
+```
+
+```bash Claude Code
+claude mcp add --transport http flexinference https://mcp.flexinference.com/mcp
+```
+
+</CodeGroup>
+
+The first time your agent calls an account tool, the client opens a browser to sign you in with the same login the dashboard uses, then shows a consent screen listing the scopes it asked for. Approve or narrow them, and the client stores the token. Docs tools need none of this and run right away.
+
+## Tools
+
+### Docs tools (no login)
+
+| Tool | Arguments | What it does |
+| --- | --- | --- |
+| `search_docs` | `query` (required) | Search the FlexInference docs and the full error catalog, and return the best matches with links. |
+| `get_error_reference` | `code` (optional) | Look up what a FlexInference error code means and how to fix it. Omit `code` to list every code. |
+
+### Account tools (OAuth, one scope each)
+
+| Tool | Scope | Arguments | What it does |
+| --- | --- | --- | --- |
+| `get_usage_summary` | `usage:read` | none | Your flex usage and savings, broken down by model. |
+| `list_api_keys` | `keys:read` | none | Your active API keys by name, last 4, and created date. Never the full key. |
+| `create_api_key` | `keys:write` | `name` (required) | Create a new `flex_live_` key. The full key is returned once. |
+| `revoke_api_key` | `keys:write` | `keyId` (required) | Revoke a key by its id. |
+| `get_byok_status` | `byok:status` | none | Which providers have a key on file, as a yes or no per provider. Never the key. |
+| `get_billing_status` | `billing:read` | none | Your payment method (brand and last 4 only), account status, accrued commission, and next bill date. |
+
+## Authentication and scopes
+
+The server is an OAuth 2.1 provider in front of the same identity the dashboard uses, so an agent resolves to the same organization in both places. Each account tool requires exactly one scope, and you approve scopes on a consent screen where you can also narrow them. There are no cookies and no server-side sessions. Every tool call carries its own token, and a tool checks its scope before it touches any data.
+
+| Scope | Grants |
+| --- | --- |
+| `docs:read` | Search the docs and read the error catalog. Granted to everyone, no login. |
+| `usage:read` | Read your usage and savings. |
+| `keys:read` | List your API keys. |
+| `keys:write` | Create and revoke API keys. |
+| `byok:status` | Read which providers have a key on file. |
+| `billing:read` | Read your billing status. |
+
+<Warning>
+  The MCP server never accepts a raw provider key. There is no write scope for BYOK, and no tool takes an `sk-...`, `AIza...`, or `sk-ant-...` value. `get_byok_status` reports only yes or no per provider. Add or rotate provider keys yourself on the [dashboard](https://www.flexinference.com/dashboard).
+</Warning>

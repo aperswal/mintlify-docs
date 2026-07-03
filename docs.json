@@ -29,6 +29,7 @@
         "group": "Using the API",
         "pages": [
           "sdks",
+          "mcp",
           "errors",
           "billing"
         ]
