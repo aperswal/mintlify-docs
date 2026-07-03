@@ -3,7 +3,7 @@ title: "Supported models"
 description: "The models FlexInference routes, and the inputs they accept."
 ---
 
-FlexInference routes to **OpenAI**, **Google Gemini**, and **Anthropic**, and proxies **any** model for `default`, `priority`, and `auto` requests. The models below additionally support the **flex race** - the duration form of [`start_within`](/deadline-routing). Pass the model by its **alias** (for example `gpt-5.5` or `gemini-3.5-flash`), not a dated snapshot.
+FlexInference routes to **OpenAI**, **Google Gemini**, and **Anthropic**, and proxies **any** model for `default`, `priority`, and `auto` requests. The models below can also run a flex request. You give `start_within` a duration, which is how long you are willing to wait for the request to start. FlexInference tries the cheaper flex tier first and runs it against that budget. If flex cannot start in time, your request falls back up to the standard tier and still completes, so a missed budget never costs you the answer. See [how flex racing works](/deadline-routing) for the full mechanics. Pass the model by its **alias** (for example `gpt-5.5` or `gemini-3.5-flash`), not a dated snapshot.
 
 ## Flex-capable models
 
@@ -41,11 +41,11 @@ FlexInference routes to **OpenAI**, **Google Gemini**, and **Anthropic**, and pr
   </Card>
 </CardGroup>
 
-A **duration** `start_within` on a model that isn't on this list returns `400 model_not_flex_capable` - the flex race only works on flex-capable models. Those same models still work with `default`, `priority`, or `auto`, which proxy any model straight to its provider. For Gemini, `default` maps to Gemini's **standard** tier; Gemini has no `auto` tier, so `auto` on a Gemini model returns `400 auto_unsupported_for_gemini`.
+A **duration** `start_within` on a model that is not on this list returns `400 model_not_flex_capable`. The flex race only runs on the flex-capable models above. You have two ways to fix it. Pick one of the flex-capable models, or drop the duration and send the request as `default`, `priority`, or `auto`, which proxy any model straight to its provider. For Gemini, `default` maps to Gemini's **standard** tier. Gemini has no `auto` tier, so `auto` on a Gemini model returns `400 auto_unsupported_for_gemini`.
 
 ## Anthropic (Claude)
 
-Claude models route to Anthropic and are **proxy-only**: they support `default`, `priority`, and `auto`, but **not** the flex race. A duration `start_within` on a `claude-*` model returns `400 flex_unsupported_for_anthropic`, because Anthropic has no flex tier. `default` maps to Anthropic's **standard_only** service tier, `auto` lets Anthropic pick, and `priority` is best-effort (mapped to `auto`, since Anthropic rejects a literal priority tier). Every `claude-*` request **must** set `max_output_tokens` (`max_tokens` on `/v1/messages`); without it you get `400 missing_max_tokens`.
+Claude models route to Anthropic and are **proxy-only**. They support `default`, `priority`, and `auto`, but not the flex race. A duration `start_within` on a `claude-*` model returns `400 flex_unsupported_for_anthropic`, because Anthropic has no flex tier. `default` maps to Anthropic's **standard_only** service tier, `auto` lets Anthropic pick, and `priority` is best-effort (mapped to `auto`, since Anthropic rejects a literal priority tier). Every `claude-*` request must set `max_output_tokens` (`max_tokens` on `/v1/messages`). If you leave it out, you get `400 missing_max_tokens`. Set the field and resend.
 
 <CardGroup cols={2}>
   <Card title="Opus" icon="layer-group">
@@ -62,15 +62,24 @@ Claude models route to Anthropic and are **proxy-only**: they support `default`,
   </Card>
 </CardGroup>
 
-Claude is reachable through any caller format - `/v1/responses`, `/v1/chat/completions`, `/v1/interactions`, and the Anthropic-native [`/v1/messages`](/sdks#messages) - since FlexInference translates each to Anthropic's Messages API. The served tier is authoritative from Anthropic: a `standard_only` request is reported as `"service_tier": "standard"` on the response.
+You can reach Claude through any caller format. That includes `/v1/responses`, `/v1/chat/completions`, `/v1/interactions`, and the Anthropic-native [`/v1/messages`](/sdks#messages). FlexInference translates each one to Anthropic's Messages API. Anthropic decides the served tier, not FlexInference. A `standard_only` request comes back reported as `"service_tier": "standard"` on the response.
+
+## Flex errors
+
+Each flex error tells you what happened, why, and the one change that fixes it. See the [errors page](/errors) for the full error shape and an example body.
+
+- `model_not_flex_capable` means you sent a duration `start_within` to a model with no flex tier. Switch to a flex-capable model above, or drop the duration and use `default`, `priority`, or `auto`.
+- `auto_unsupported_for_gemini` means you asked for `auto` on a Gemini model, which has no `auto` tier. Use `default` for Gemini's standard tier.
+- `flex_unsupported_for_anthropic` means you sent a duration `start_within` to a `claude-*` model, which has no flex tier. Drop the duration and use `default`, `priority`, or `auto`.
+- `missing_max_tokens` means a `claude-*` request left out `max_output_tokens` (`max_tokens` on `/v1/messages`). Set it and resend.
 
 ## Inputs
 
 These models accept the input types you'd expect from OpenAI:
 
-- **Text** — system, developer, user, and assistant messages.
-- **Images** — pass image URLs or base64 data URLs. Data URLs are the most reliable.
-- **Files** — PDFs and other file inputs supported by the Responses API.
+- **Text**: system, developer, user, and assistant messages.
+- **Images**: pass image URLs or base64 data URLs. Base64 data URLs are the most reliable.
+- **Files**: PDFs and other file inputs the Responses API accepts.
 
 Output is text (including tool calls, structured outputs, and reasoning). Streaming works on every model. On Gemini, `reasoning.effort` maps to a per-model `thinking_level` and may be clamped to the range that model supports.
 
@@ -79,5 +88,5 @@ Output is text (including tool calls, structured outputs, and reasoning). Stream
 </Note>
 
 <Note>
-  New flex-capable models are added as OpenAI ships them. If a model you expect is missing, check that you're using its alias and that OpenAI offers flex pricing for it.
+  We add new flex-capable models from OpenAI and Gemini as the providers ship them. If a model you expect is missing, check that you are using its alias and that the provider offers a flex tier for it.
 </Note>

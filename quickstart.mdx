@@ -1,29 +1,33 @@
 ---
 title: "Quickstart"
-description: "From zero to your first deadline-aware request."
+description: "From zero to your first request that runs the cheaper tier and still comes back in time."
 ---
 
-This guide takes you from signing up to a working request that picks the cheapest tier within your deadline. Keep your OpenAI code and your own key, point the base URL at FlexInference, and flex requests cost half the standard rate.
+This guide takes you from signing up to a working request that runs a cheaper tier and still comes back before your time is up. Point the base URL at FlexInference, keep your SDK code and your own provider key, and let FlexInference find a cheaper way to run the same call. It works with OpenAI, Gemini, and Anthropic. On a flex request, FlexInference charges 20% of what it saves you, and nothing when it saves nothing.
 
 ## Prerequisites
 
-- An [OpenAI API key](https://platform.openai.com/api-keys) with available credit. FlexInference uses your key (BYOK); OpenAI bills you directly.
+- An [OpenAI API key](https://platform.openai.com/api-keys) with available credit. FlexInference uses your key (BYOK). OpenAI bills you directly.
 - A terminal with `curl`, or Python 3.9+, or Node.js 18+.
 
 ## Get started
 
 <Steps>
   <Step title="Create a FlexInference account">
-    Go to the [dashboard](https://www.flexinference.com/dashboard) and sign in. Each account maps to an organization that owns its keys and usage.
+    Go to the [dashboard](https://www.flexinference.com/dashboard) and sign in. Your account is its own organization. It owns your API keys and tracks your usage, so your keys and your bill stay separate from everyone else's.
   </Step>
   <Step title="Create an API key">
-    In the dashboard, create a key. It looks like `flex_live_…` and is shown once — copy it somewhere safe. This is the key you send to FlexInference, not your OpenAI key.
+    In the dashboard, create a key. It looks like `flex_live_...` and you only see it once, so copy it somewhere safe right away. This is the key you send to FlexInference, not your OpenAI key.
   </Step>
   <Step title="Add your OpenAI key (BYOK)">
     Paste your OpenAI key into the dashboard. It is encrypted at rest and used only to make requests on your behalf. See [Authentication](/authentication) for how this works.
   </Step>
   <Step title="Make your first request">
-    Point your client at `https://api.flexinference.com/v1` and add `start_within`. Below, `00h-00m-30s` asks us to start within 30 seconds — we race OpenAI's flex tier and fall back to standard if it can't.
+    Point your client at `https://api.flexinference.com/v1` and add `start_within`. Here `00h-00m-30s` means you are willing to wait up to 30 seconds for the request to start. FlexInference tries OpenAI's flex tier first, because it costs less but can sit in a queue. If the flex tier will not start inside your 30 seconds, FlexInference runs your normal standard tier instead, so the request still completes. Standard is the full-price tier that always starts right away, so you never lose the answer.
+
+    Here are two words to know. Flex is the cheaper tier, and it can wait in a queue before it starts. Standard is your normal full-price tier, and it starts right away. Most tools fall back to a cheaper model when something breaks. FlexInference does the opposite. It starts on the cheap flex tier and moves up to your standard tier only when flex would miss your time limit, so a slow flex tier never costs you the answer.
+
+    `start_within` is the longest you are willing to wait for the request to start. You write it as a duration like `00h-00m-30s` for 30 seconds. A bigger value gives the cheap flex tier more room to start, which saves you money. A smaller value moves you to the standard tier sooner. The Claude example passes `default` instead of a duration, because Anthropic has no flex tier to race. That sends the request straight to the standard tier. The value bounds when the work starts, not how long the model takes to answer. See the routing page for the full list of values.
 
     <CodeGroup>
 
@@ -100,16 +104,20 @@ This guide takes you from signing up to a working request that picks the cheapes
 </Steps>
 
 <Check>
-  A `200` response with `"service_tier": "flex"` means the cheap tier won the race. `"service_tier": "default"` means we fell back to standard to meet your deadline. Either way, you got an answer in time.
+  A `200` response with `"service_tier": "flex"` means the cheaper flex tier started in time, so you saved money on this call. `"service_tier": "default"` means the flex tier was too slow, so FlexInference ran your normal standard tier to finish inside your time limit. Either way you got your answer on time.
 </Check>
+
+<Note>
+  If your first request fails, read the error body. Every FlexInference error tells you what went wrong, why it happened, how to fix it, and shows a working example. If you forgot to add your OpenAI key in the dashboard, the error says exactly that and points you to the page to fix it. Errors that come straight from the provider pass through with their original status and body, so nothing is hidden from you. See the errors page for the full list.
+</Note>
 
 ## What to try next
 
 <CardGroup cols={2}>
-  <Card title="Tune the deadline" icon="hourglass-half" href="/deadline-routing">
-    Learn the `start_within` values and when fallback happens.
+  <Card title="Set your time limit" icon="hourglass-half" href="/deadline-routing">
+    Learn the `start_within` values and when FlexInference moves you from the flex tier up to your standard tier.
   </Card>
   <Card title="Stream, tools, vision" icon="code" href="/sdks">
-    Everything OpenAI supports works unchanged.
+    Streaming, tools, and vision work unchanged across OpenAI, Gemini, and Anthropic.
   </Card>
 </CardGroup>

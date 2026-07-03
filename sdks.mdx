@@ -3,7 +3,7 @@ title: "SDKs and API usage"
 description: "Use the OpenAI SDK you already have. Change the base URL, add start_within."
 ---
 
-FlexInference speaks the OpenAI API. There's no new SDK to learn - point the official OpenAI SDK (or `curl`) at our base URL, send your `flex_live_` key, and add the required `start_within` field. Every request needs it; omitting it returns `400 missing_start_within`.
+FlexInference speaks the OpenAI API. There is no new SDK to learn. Point the official OpenAI SDK (or `curl`) at our base URL, send your `flex_live_` key, and add the required `start_within` field. Every request needs it. Omit it and you get `400 missing_start_within`.
 
 ```
 Base URL   https://api.flexinference.com/v1
@@ -48,7 +48,9 @@ export FLEX_BASE_URL="https://api.flexinference.com/v1"
 
 ## Passing `start_within`
 
-It's a standard request field. The OpenAI SDKs don't type it, so pass it through their escape hatch.
+The `start_within` field is a normal request field, and every request needs it. It sets how long you are willing to wait for the request to start returning. You write it as a duration, like `00h-01m-00s` for one minute. FlexInference uses that time budget to try a cheaper flex tier first. The OpenAI SDKs do not have a typed field for it, so you pass it through their escape hatch. That is `extra_body` in Python and a plain field on the request object in Node.
+
+Here is what flex does on every request. FlexInference tries a cheaper flex tier first, inside the time budget you set with `start_within`. If the flex tier cannot finish in time, FlexInference runs your standard model instead, so the request still completes on the model you trust. You never get a worse answer than your standard model would give.
 
 <CodeGroup>
 
@@ -85,7 +87,7 @@ See [Deadline routing](/deadline-routing) for the full set of values.
 
 ## Streaming
 
-Set `stream: true` and read events as they arrive, exactly as with OpenAI. The flex race is invisible to the stream — you start receiving tokens only once a tier has committed.
+Set `stream: true` and read events as they arrive, the same way you do with OpenAI. Streaming does not change how flex works. FlexInference picks a tier first, and you start getting tokens once that tier begins to answer.
 
 <CodeGroup>
 
@@ -193,7 +195,7 @@ curl "$FLEX_BASE_URL/interactions" \
 
 </CodeGroup>
 
-The response is an `interaction` object. Output lives in `steps`; token counts split across input, output, thought, cached, tool-use, and total:
+The response is an `interaction` object. Your output lives in `steps`. The `usage` object splits the token counts across input, output, thought, cached, tool-use, and total.
 
 ```json
 {
@@ -220,9 +222,11 @@ The response is an `interaction` object. Output lives in `steps`; token counts s
 
 `status` is `requires_action` when a step is a `function_call`, `incomplete` when output is truncated, `failed` on error, and `completed` otherwise. `generation_config.thinking_level` maps to `reasoning.effort`. `seed`, `stop_sequences`, and a caller-supplied `service_tier` are refused; see [Errors](/errors).
 
+Every FlexInference error tells you what is wrong, why, and how to fix it, and it shows an example. Send a `service_tier` yourself and you get `service_tier_not_allowed`, because FlexInference owns tier selection. The fix is to drop the field and let flex choose. See [Errors](/errors) for the full list with example bodies.
+
 ## Messages
 
-The Messages endpoint is a fourth caller format that speaks the **Anthropic Messages** shape - in and out - and works with **any** model, since FlexInference translates it to and from the canonical form. `start_within` applies identically and is required. Anthropic requires `max_tokens`, so it is required here too; omit it and you get `400 missing_max_tokens`. Send `messages` as `{role, content}` turns, with `content` a string or an array of content blocks; `system`, `tools`, `tool_choice`, and `thinking` map to the same upstream features.
+The Messages endpoint is a fourth caller format. It speaks the **Anthropic Messages** shape for both the request and the response, and it works with **any** model, because FlexInference translates it to and from the canonical form. `start_within` applies identically and is required. Anthropic requires `max_tokens`, so it is required here too; omit it and you get `400 missing_max_tokens`. Send `messages` as `{role, content}` turns, with `content` a string or an array of content blocks; `system`, `tools`, `tool_choice`, and `thinking` map to the same upstream features.
 
 <CodeGroup>
 
@@ -261,7 +265,7 @@ curl "$FLEX_BASE_URL/messages" \
 
 </CodeGroup>
 
-The response is an Anthropic `message` object. Output lives in `content` as `text`, `thinking`, and `tool_use` blocks; the served tier is authoritative from `usage.service_tier`:
+The response is an Anthropic `message` object. Your output lives in `content` as `text`, `thinking`, and `tool_use` blocks. The `usage.service_tier` field tells you which tier actually served the request, flex or standard, and that field is the one to trust.
 
 ```json
 {
@@ -286,8 +290,8 @@ The response is an Anthropic `message` object. Output lives in `content` as `tex
 
 ## Everything else works unchanged
 
-Tool calling, structured outputs (`response_format`), vision, and reasoning all pass through to OpenAI as-is. Use them exactly as you would directly.
+Tool calling, structured outputs (`response_format`), vision, and reasoning all pass straight through to the provider you picked. Use them exactly as you would when you call that provider directly.
 
 <Warning>
-  A few Chat Completions parameters have no equivalent on the Responses models FlexInference routes and are rejected up front with `unsupported_parameter`: `presence_penalty`, `frequency_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop`, `prediction`, `audio`, non-text `modalities`, `web_search_options`, and `n > 1`. They're only rejected when meaningfully set — leaving them at their defaults is fine. For web search, use a Responses `web_search` tool.
+  A few Chat Completions parameters have no match on the Responses models FlexInference routes, so FlexInference rejects them up front with `unsupported_parameter`: `presence_penalty`, `frequency_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop`, `prediction`, `audio`, non-text `modalities`, `web_search_options`, and `n > 1`. FlexInference only rejects them when you set them to a real value. Leaving them at their defaults is fine. For web search, use a Responses `web_search` tool.
 </Warning>

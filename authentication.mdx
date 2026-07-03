@@ -14,7 +14,7 @@ You have your FlexInference API key plus a **provider key** (OpenAI, Gemini, and
 
 ## FlexInference API key
 
-Create a key in the [dashboard](https://www.flexinference.com/dashboard). It is shown once at creation — store it like a password. Send it as a bearer token:
+Create a key in the [dashboard](https://www.flexinference.com/dashboard). We show it once when you create it, so store it like a password. Send it as a bearer token:
 
 ```bash
 curl https://api.flexinference.com/v1/responses \
@@ -23,7 +23,9 @@ curl https://api.flexinference.com/v1/responses \
   -d '{ "model": "gpt-5-nano", "input": "ping", "start_within": "default" }'
 ```
 
-A malformed or unknown key returns `401 invalid_api_key`. Keys carry a checksum, so an obviously-mistyped key is rejected immediately.
+The example also sets `start_within`, the field FlexInference requires on every request. It says how long you are willing to wait for the request to start. This request uses `default`, so it runs on the standard tier. When you send a duration instead, FlexInference tries a cheaper flex tier first and falls back to your standard tier if flex cannot start in time. See [Deadline routing](/deadline-routing) for the full list of values.
+
+A malformed or unknown key returns `401 invalid_api_key`. Every FlexInference key carries a checksum, so we catch an obvious typo and reject it before it ever reaches a provider. If you hit this error, check that you copied the whole key, that it starts with `flex_live_`, and that you have not revoked it in the dashboard. Create a fresh key if you are not sure it is still good.
 
 <Tip>
   Treat `flex_live_` keys as secrets. Don't commit them or ship them in client-side code. If a key leaks, revoke it in the dashboard and create a new one.
@@ -31,12 +33,12 @@ A malformed or unknown key returns `401 invalid_api_key`. Keys carry a checksum,
 
 ## Your provider keys (BYOK)
 
-FlexInference does not resell inference. You add your own provider key once in the dashboard - an **OpenAI** key (`sk-…`) for GPT models, a **Gemini** key (`AIza…`) for Gemini models, an **Anthropic** key (`sk-ant-…`) for Claude models, or any mix - and we use the matching key to call that provider on your behalf. The provider bills your account directly. We pick the key by the model: a `gemini-*` model uses your Gemini key, a `claude-*` model uses your Anthropic key, everything else uses your OpenAI key.
+FlexInference does not resell inference. You add your own provider key once in the dashboard, and we use it to call that provider for you. You can add an OpenAI key (`sk-...`) for GPT models, a Gemini key (`AIza...`) for Gemini models, an Anthropic key (`sk-ant-...`) for Claude models, or any mix of the three. The provider bills your account directly. We pick the key from the model name. A `gemini-*` model uses your Gemini key. A `claude-*` model uses your Anthropic key. Everything else uses your OpenAI key.
 
 Each key is encrypted at rest with a per-organization binding, so it can only ever be used for your organization. We never log it, and we never return it.
 
 If the key a request needs isn't configured, you get `400 no_byok_key` (OpenAI), `400 no_gemini_key` (Gemini), or `400 no_anthropic_key` (Anthropic). Add the key in the dashboard and try again.
 
 <Info>
-  Because billing is on your OpenAI account, your existing OpenAI rate limits, quotas, and spend controls all still apply.
+  Because billing runs on your own provider account, your existing rate limits, quotas, and spend controls all still apply. This holds whether the request goes to OpenAI, Gemini, or Anthropic.
 </Info>

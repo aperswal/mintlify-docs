@@ -1,35 +1,45 @@
 ---
-title: "Introduction"
-description: "A deadline-aware, OpenAI-compatible inference router. Bring your own key, set one required start_within field, trade latency for cost."
+title: "What FlexInference does"
+description: "An OpenAI-compatible router that works with OpenAI, Gemini, and Anthropic. Bring your own key and set one field, start_within, to say how long you can wait. FlexInference finds a cheaper way to run the same request, and you only pay when it saves you money."
 ---
 
-Same model. Half the bill. FlexInference is a deadline-aware, OpenAI-compatible inference router. You send the same Chat Completions, Responses, Interactions, or Anthropic Messages requests you already send, with your own OpenAI, Gemini, or Anthropic key. Add one required field, `start_within`, to tell us how long you can wait. Flex requests cost half the standard rate for the same model and the same response. We route each request to the cheapest tier that meets your deadline, and fall back to standard if flex cannot.
+You send the same request and get the same answer. FlexInference runs it for less. Across more than 10,000 real requests it cut cost about 47 percent while latency stayed about the same.
+
+FlexInference is a router that works with OpenAI, Gemini, and Anthropic. You send the same Chat Completions, Responses, Interactions, or Anthropic Messages requests you already send, with your own OpenAI, Gemini, or Anthropic key. You add one required field, `start_within`, to tell us how long you can wait. A flex request costs half the standard rate for the same model and the same answer. FlexInference tries the cheaper flex tier first. If flex cannot start in the time you gave, FlexInference moves the request up to your normal standard tier so it still completes.
 
 <Info>
-  FlexInference does not sell inference. You bring your own provider key (BYOK) - OpenAI, Gemini, or Anthropic - and the provider bills your account directly at whatever tier served the request. We add deadline-aware routing on top.
+  FlexInference does not sell inference. You bring your own provider key (BYOK) - OpenAI, Gemini, or Anthropic - and the provider bills your account directly at whatever tier served the request. We add cost routing on top that respects how long you can wait.
 </Info>
+
+Standard routing is free. On a flex request, FlexInference charges 20 percent of the money it saved you, and nothing when it saves nothing. There is no per-request fee and no markup on your tokens. You only pay when you come out ahead.
 
 ## Why it exists
 
 OpenAI sells the same models at different prices depending on how fast you need them. The flex (batch) tier runs at half the standard rate, but capacity is not guaranteed. Most apps do not have the time to manage that trade-off per request.
 
-With FlexInference you express the trade-off declaratively:
+We measured this across more than 10,000 real requests. Cost came down about 47 percent, token weighted, while p50 latency stayed about the same, up around 4 percent. You save real money and your users do not feel a slower app.
+
+`start_within` is how long you are willing to wait before the request starts running. You are not setting a hard project deadline. You are telling us your latency budget. Give it a short duration when a user is waiting on the answer, and a longer one when nothing is waiting and you would rather pay less.
+
+With FlexInference you just say how long you can wait, and it does the rest:
 
 <CardGroup cols={3}>
   <Card title="Need it now" icon="bolt">
     `start_within: "priority"` routes to OpenAI's priority tier.
   </Card>
   <Card title="Can wait a bit" icon="hourglass-half">
-    `start_within: "00h-00m-30s"` races flex against your deadline, then falls back to standard.
+    `start_within: "00h-00m-30s"` tries the cheaper flex tier first. If flex cannot start within 30 seconds, FlexInference moves the request up to your standard tier so it still runs.
   </Card>
   <Card title="Default" icon="equals">
     `start_within: "default"` uses OpenAI's default tier and pricing. (`"auto"` lets OpenAI pick.)
   </Card>
 </CardGroup>
 
+Most routers start on your strong model and drop down to a cheaper one. FlexInference works the other way. It starts on the cheaper flex tier and moves up to your normal standard tier only when flex cannot start in time. Standard is the tier you would have paid for anyway, so a fallback never costs you more than running without FlexInference.
+
 ## Drop-in compatible
 
-Point the base URL at FlexInference and add the required `start_within` field. Everything else - streaming, tool calling, structured outputs, vision, reasoning - works exactly as it does against OpenAI.
+Point the base URL at FlexInference and add the required `start_within` field. Everything else works the same, including streaming, tool calling, structured outputs, vision, and reasoning. You get the same behavior you would get calling OpenAI, Gemini, or Anthropic directly.
 
 ```
 https://api.flexinference.com/v1
@@ -37,13 +47,13 @@ https://api.flexinference.com/v1
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/quickstart">
-    Go from zero to your first deadline-aware request.
+    Go from zero to your first request.
   </Card>
   <Card title="Deadline routing" icon="hourglass-half" href="/deadline-routing">
     How `start_within` works, and when fallback kicks in.
   </Card>
   <Card title="Authentication" icon="key" href="/authentication">
-    FlexInference API keys and your BYOK OpenAI key.
+    FlexInference API keys, plus your own OpenAI, Gemini, or Anthropic key.
   </Card>
   <Card title="Supported models" icon="layer-group" href="/models">
     The models that support flex routing.
