@@ -50,6 +50,7 @@ These originate in our layer. Every message below states what was wrong, the spe
 | `405` | <span id="method_not_allowed" /> `method_not_allowed` | The path exists, but every FlexInference endpoint only accepts `POST`. Send a `POST` with a JSON body instead. |
 | `499` | <span id="client_closed_request" /> `client_closed_request` | The client disconnected (closed tab, cancelled fetch, or a client-side timeout) before FlexInference finished responding. Not counted as a service failure. If unintentional, raise your client timeout - a flex race can legitimately take up to 10 minutes - and avoid cancelling the request early. |
 | `500` | <span id="internal_error" /> `internal_error` | Something failed inside FlexInference outside of input validation - our bug, not your request. Safe to retry once; if it persists, contact support with the approximate timestamp and your org. |
+| `502` | <span id="upstream_stream_failed" /> `upstream_stream_failed` | The upstream provider committed a response but its stream then ended with no completion event, or failed mid-stream with no error of its own to pass through - a transient upstream or network fault between FlexInference and the provider, not your request. Retry once; if it persists for one model the provider or that model may be degraded (try another model, or a shorter flex deadline so a slow attempt falls back to standard sooner). Distinct from a verbatim upstream `5xx`, which is passed through unchanged. |
 
 ## Pass-through errors
 
