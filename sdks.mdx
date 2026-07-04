@@ -130,6 +130,34 @@ curl "$FLEX_BASE_URL/responses" \
 
 </CodeGroup>
 
+## Timeouts
+
+`start_within` is a promise about when your request starts, not when it finishes. Once the cheaper flex tier begins to answer, it runs to the end at its own pace, and FlexInference never upgrades a committed request to standard for being slow. FlexInference also holds the HTTP response until a tier commits, so your client is waiting for that whole window. Set your client timeout to at least your `start_within` plus the time the model needs to answer.
+
+The OpenAI SDK defaults to a 10 minute timeout. That covers any `start_within` (the longest allowed is 10 minutes) plus a normal generation, so the default is safe. If you set a shorter timeout, a long `start_within` can trip it, and you get a client-side cancel instead of a result. See [`client_closed_request`](/errors#client_closed_request).
+
+<CodeGroup>
+
+```python Python
+client = OpenAI(
+    base_url="https://api.flexinference.com/v1",
+    api_key="flex_live_...",
+    timeout=600,  # seconds; keep it at least as long as your start_within
+)
+```
+
+```typescript Node
+const client = new OpenAI({
+  baseURL: "https://api.flexinference.com/v1",
+  apiKey: "flex_live_...",
+  timeout: 600_000, // ms; keep it at least as long as your start_within
+});
+```
+
+</CodeGroup>
+
+The FlexInference native SDKs ([Python](https://pypi.org/project/flexinference/), [TypeScript](https://www.npmjs.com/package/flexinference)) handle this for you. They size the wait for the first response from your `start_within` automatically, cap a stalled stream with an idle timeout, and keep no total cap on a stream so a long answer is never cut off. A non-streaming call keeps a total budget. Each timeout is configurable on the client and per request.
+
 ## Chat Completions
 
 The Chat Completions endpoint works the same way. `start_within` applies identically.

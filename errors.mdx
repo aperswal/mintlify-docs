@@ -1,9 +1,11 @@
 ---
 title: "Errors"
-description: "The error envelope, FlexInference codes, and what passes through from OpenAI."
+description: "The per-surface error envelopes, FlexInference codes, and how provider errors are normalized."
 ---
 
-FlexInference uses OpenAI's error envelope, so any OpenAI client parses our errors without changes:
+FlexInference shapes every error to match the endpoint you called, so the SDK you already use parses it. Call `/v1/responses` or `/v1/chat/completions` and you get OpenAI's envelope. Call `/v1/messages` and you get Anthropic's. Call `/v1/interactions` and you get Google's. This holds for both FlexInference's own errors and errors from the upstream provider, so one endpoint always returns one error shape.
+
+On `/v1/responses` and `/v1/chat/completions`, the OpenAI envelope:
 
 ```json
 {
@@ -17,7 +19,17 @@ FlexInference uses OpenAI's error envelope, so any OpenAI client parses our erro
 }
 ```
 
-`type` mirrors OpenAI's broad categories (`invalid_request_error`, `authentication_error`, `rate_limit_error`), plus two of our own: `flexinference_error` for internal faults and `billing_error` when a billing condition (like an overdue balance) pauses billable requests. `code` is the machine-readable reason. `param` names the offending field when there is one. `doc_url` is an extra field we added, and clients that only read `message`, `type`, `code`, and `param` are not affected by it. When FlexInference knows the code, `doc_url` links straight to that code's row below. When it does not, `doc_url` is `null`.
+The same error on `/v1/messages` (Anthropic's shape) and `/v1/interactions` (Google's shape):
+
+```json
+{ "type": "error", "error": { "type": "authentication_error", "message": "..." } }
+```
+
+```json
+{ "error": { "code": 401, "message": "...", "status": "UNAUTHENTICATED" } }
+```
+
+The status code and message are the same across all three; only the wrapper changes. The full detail lives on the OpenAI envelope. There, `type` mirrors OpenAI's broad categories (`invalid_request_error`, `authentication_error`, `rate_limit_error`), plus two of our own: `flexinference_error` for internal faults and `billing_error` when a billing condition (like an overdue balance) pauses billable requests. `code` is the machine-readable reason. `param` names the offending field when there is one. `doc_url` links to that code's row below, or is `null` when unknown. The Anthropic shape carries an Anthropic `type` (mapped from the status) plus the message; the Google shape carries the numeric `code`, the message, and a canonical `status`. The FlexInference-specific `code` and `doc_url` appear only on the OpenAI envelope.
 
 ## FlexInference codes
 
@@ -52,14 +64,14 @@ Several of these errors involve `start_within`. Here is the one thing to know. F
 | `405` | <span id="method_not_allowed" /> `method_not_allowed` | The path exists, but every FlexInference endpoint only accepts `POST`. Send a `POST` with a JSON body instead. |
 | `499` | <span id="client_closed_request" /> `client_closed_request` | The client disconnected (closed tab, cancelled fetch, or a client-side timeout) before FlexInference finished responding. Not counted as a service failure. If you did not mean to cancel, raise your client timeout and let the request finish. A flex request can legitimately take up to 10 minutes. |
 | `500` | <span id="internal_error" /> `internal_error` | Something failed inside FlexInference outside of input validation - our bug, not your request. Safe to retry once; if it persists, contact support with the approximate timestamp and your org. |
-| `502` | <span id="upstream_stream_failed" /> `upstream_stream_failed` | The upstream provider committed a response but its stream then ended with no completion event, or failed mid-stream with no error of its own to pass through - a transient upstream or network fault between FlexInference and the provider, not your request. Retry once; if it persists for one model the provider or that model may be degraded (try another model, or set a shorter `start_within` window so a slow attempt falls back to your standard tier sooner). Distinct from a verbatim upstream `5xx`, which is passed through unchanged. |
+| `502` | <span id="upstream_stream_failed" /> `upstream_stream_failed` | The upstream provider committed a response but its stream then ended with no completion event, or failed mid-stream with no error of its own to pass through - a transient upstream or network fault between FlexInference and the provider, not your request. Retry once; if it persists for one model the provider or that model may be degraded (try another model, or set a shorter `start_within` window so a slow attempt falls back to your standard tier sooner). Distinct from an upstream `5xx` the provider itself returned, which is reshaped to your surface with the provider's message. |
 
-## Pass-through errors
+## Provider errors
 
-Anything that is not a FlexInference-layer error is the provider's own response, returned to you unchanged. You get the same status and the same body the provider sent. A `400` for a bad parameter, a `401` for an invalid provider key, and a `429` rate limit on the standard attempt all reach you exactly as the provider wrote them. FlexInference never rewrites these errors. A pass-through error keeps whatever `doc_url` the provider sent, and FlexInference does not add one.
+An error from the upstream provider (a `400` for a bad parameter, a `401` for an invalid provider key, a `429` rate limit on the standard attempt) is normalized the same way as our own. FlexInference keeps the provider's status and message and re-emits them in your surface's envelope. You never receive the provider's raw body, so you do not have to special-case three vendors' error shapes: call `/v1/messages` and even an OpenAI-model error comes back Anthropic-shaped. The FlexInference-specific `code` and `doc_url` are on the OpenAI envelope only; a provider error carries the provider's message with the surface's `type` or `status`.
 
 <Tip>
-  Branch on `error.code` for FlexInference-specific handling (for example, prompt the user to add a BYOK key on `no_byok_key`), and treat unknown codes as ordinary OpenAI errors.
+  On the OpenAI surface, branch on `error.code` for FlexInference-specific handling (for example, prompt the user to add a BYOK key on `no_byok_key`), and treat unknown codes as ordinary OpenAI errors.
 </Tip>
 
 ## Handling errors in code

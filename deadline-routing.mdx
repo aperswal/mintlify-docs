@@ -76,9 +76,9 @@ In rare cases the flex pool fails *after* the request has been accepted and star
 
 You bring your own key, so your provider bills your account at the rate of whichever tier served the request. You pay flex rates when flex commits and standard rates when it falls back. Sometimes a flex attempt burns a few tokens before it fails. Your provider bills that usage the same way it would if you called flex yourself, and we show it in your usage so the cost is never hidden. FlexInference adds no markup on your tokens. We charge 20% of the money we save you, and we charge nothing when we save you nothing.
 
-## What passes through unchanged
+## What FlexInference changes
 
-Every other status code and response body from your provider passes through untouched. A `400` for a bad parameter, a `401` for a bad key, or a rate limit on the standard attempt all reach you unchanged. You see exactly what your provider returned. FlexInference only changes the tier, and it never changes the contract.
+FlexInference changes the tier, and nothing about the meaning of your request or its result. It never rewrites a provider's status or message. The one thing it normalizes is the error envelope: an error is returned in the shape of the endpoint you called (OpenAI on responses and chat, Anthropic on messages, Google on interactions), carrying the provider's status and message, so the SDK you are already using can parse it. See [Errors](/errors).
 
 <Note>
   `start_within` is **required**. If you leave it out, the request returns `400 missing_start_within`, and this happens even with a plain OpenAI SDK pointed at our base URL. If you send a value we cannot read, you get `invalid_start_within`. A valid value looks like `"default"`, `"priority"`, `"auto"`, or a duration such as `"00h-00m-30s"`. The bare word `standard` used to be allowed and no longer is, so send `default` instead. See [Errors](/errors) for the full list.
