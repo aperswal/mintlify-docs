@@ -33,6 +33,12 @@
           "errors",
           "billing"
         ]
+      },
+      {
+        "group": "FAQ",
+        "pages": [
+          "faq"
+        ]
       }
     ],
     "global": {

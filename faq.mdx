@@ -1,0 +1,68 @@
+---
+title: "FAQ"
+description: "Common questions about FlexInference: start_within, pricing, providers, billing, and the MCP server."
+---
+
+{/* GENERATED FILE - do not edit by hand.
+    Source of truth: website/src/app/faq-data.ts
+    Regenerate: cd website && pnpm gen:faq */}
+
+## What is start_within?
+
+A required field on every request. Set it to default, priority, auto, or a duration HHh-MMm-SSs (5 seconds to 10 minutes). In the duration you provide we search for cheaper inference through different providers that support the model you selected. If we can't find cheaper inference in that time, we escalate your request to a default request. This way you get a response, but whenever possible, for cheaper.
+
+## How much does FlexInference save?
+
+Across all our traffic, flex routing cuts blended cost by roughly 40 to 50% for under 10% more latency. We never charge on default, auto, or priority requests, so you instantly skip the roughly 5.5% upcharge other routers add on those. Actual savings depend on your models, providers, and the deadline you set. Anthropic is proxy-only and does not get the flex savings.
+
+## Which providers and models do you support?
+
+All OpenAI, Gemini, and Anthropic models. Only those that support flex are available for cheaper inference search.
+
+## Do you have an MCP server?
+
+Yes. Point any MCP client such as Claude or Cursor at https://mcp.flexinference.com/mcp. Two docs tools work with no login. They search the docs and look up any error code. After a one-time OAuth sign-in, an agent can also read your usage and savings, list, create, or revoke API keys, and check billing, each behind its own scope. We never take a raw provider key over MCP, so add those on the dashboard. See the MCP docs for setup.
+
+## Are your errors built for coding agents?
+
+Yes. Every error we return comes back in the shape of the endpoint you called, OpenAI, Anthropic, or Google, so the SDK you already use parses it unchanged. On the OpenAI shape it adds a machine-readable code, the offending field, and a doc_url that links straight to the reference. The message states what broke, the rule you hit, and the exact fix with an example, so showing the message is usually enough for you or your agent to fix it on the first try.
+
+## Do Anthropic models get the cheaper inference search?
+
+No. Anthropic is proxy-only: no flex race and no cost savings. You get the same unified API, your key encrypted at rest, and service-tier control (default, auto), and you draw down your own Anthropic credits. Call any claude-* model on /v1/responses, or use the Anthropic Messages format directly on /v1/messages.
+
+## Do you support caching?
+
+Yes lexical caching, semantic caching coming soon.
+
+## Do you support fallback providers?
+
+Not yet, coming soon.
+
+## Do you support upstream retries (to the LLM providers)?
+
+Not yet, coming soon.
+
+## Do you support automatic model selection?
+
+Not yet, coming soon. (The start_within value auto is OpenAI's service tier, not this.)
+
+## Do you charge a fee per request?
+
+There is no flat per-request fee. A flex request that beats the standard price carries a commission of 20% of what it saves you, so you only ever pay when you actually save; if a request saves nothing, it is free. Standard, priority, and auto routing and all Anthropic models have no fee at all.
+
+## How do you make money?
+
+We charge a commission of 20% of the money a flex request actually saves you versus the standard price. If a request saves you nothing, it is free, and standard, priority, and auto routing and all Anthropic models are always free. Commission accrues per request and is billed monthly.
+
+## When and how am I charged?
+
+Commission accrues per request and is billed monthly, but only once your accrued balance reaches $20; a smaller balance carries forward to the next month. Add a card on file in the dashboard Billing page and we charge it automatically when a bill is due. If a payment is past due, billable flex is paused and priced flex requests return a 402, while free routing (default, priority, auto) and all Anthropic models keep working; update your card to resume.
+
+## Can I still save on inference if I already have provider credits?
+
+Yes. Bring your own API key, which we encrypt at rest, and your requests draw down your existing credits.
+
+## Do you see my requests or responses?
+
+No we don't see your information.
