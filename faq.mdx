@@ -15,6 +15,10 @@ A required field on every request. Set it to default, priority, auto, or a durat
 
 Across all our traffic, flex routing cuts blended cost by roughly 40 to 50% for under 10% more latency. We never charge on default, auto, or priority requests, so you instantly skip the roughly 5.5% upcharge other routers add on those. Actual savings depend on your models, providers, and the deadline you set. Anthropic is proxy-only and does not get the flex savings.
 
+## What happens if FlexInference cannot find cheaper inference?
+
+If the flex race cannot find cheaper inference within your start_within deadline, we escalate the request to a standard, default-tier request, so you still get your response. We only charge a commission when a flex request actually saves you money, so a request that finds nothing cheaper carries no fee.
+
 ## Which providers and models do you support?
 
 All OpenAI, Gemini, and Anthropic models. Only those that support flex are available for cheaper inference search.
@@ -66,3 +70,7 @@ Yes. Bring your own API key, which we encrypt at rest, and your requests draw do
 ## Do you see my requests or responses?
 
 No we don't see your information.
+
+## Does FlexInference change my model, prompt, or output?
+
+No. We call the exact model you requested with your exact prompt, and pass the response back unchanged. The only thing we change is how the request is routed, which tier or provider serves that same model, to find it cheaper. We never swap models, rewrite prompts, or alter responses, and we never silently strip a parameter you set to force a request through.
